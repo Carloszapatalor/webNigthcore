@@ -1,0 +1,10 @@
+{
+  "tasks": {
+    "dev": "deno run --watch --allow-net --allow-env --env-file=.env main.ts"
+  },
+  "imports": {
+    "hono": "jsr:@hono/hono@^4",
+    "hono/jwt": "jsr:@hono/hono@^4/jwt",
+    "hono/cookie": "jsr:@hono/hono@^4/cookie"
+  }
+}
