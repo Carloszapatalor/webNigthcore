@@ -11,13 +11,16 @@ export async function initDb() {
   const db = getTursoClient();
   await db.execute(`
     CREATE TABLE IF NOT EXISTS admin_users (
-      id            TEXT PRIMARY KEY,
-      username      TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      role          TEXT NOT NULL DEFAULT 'admin',
-      created_at    TEXT NOT NULL
+      id                   TEXT PRIMARY KEY,
+      username             TEXT UNIQUE NOT NULL,
+      password_hash        TEXT NOT NULL,
+      role                 TEXT NOT NULL DEFAULT 'admin',
+      must_change_password INTEGER NOT NULL DEFAULT 0,
+      created_at           TEXT NOT NULL
     )
   `);
+  // Migración: agrega columna si la tabla ya existía sin ella
+  await db.execute(`ALTER TABLE admin_users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`).catch(() => {});
   await db.execute(`
     CREATE TABLE IF NOT EXISTS member_alters (
       username   TEXT PRIMARY KEY,

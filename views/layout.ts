@@ -40,10 +40,13 @@ export function publicLayout(title: string, content: string): string {
   <nav class="bg-gray-900 border-b border-gray-800">
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="/" class="text-purple-400 font-bold text-xl tracking-wide">⚔️ Nightcore</a>
-      <div class="flex gap-6 text-sm">
+      <div class="flex items-center gap-6 text-sm">
         <a href="/" class="text-gray-300 hover:text-purple-400 transition">Inicio</a>
         <a href="/guias" class="text-gray-300 hover:text-purple-400 transition">Guías</a>
-        <a href="/auth/login" class="text-gray-300 hover:text-purple-400 transition">Admin</a>
+        <a href="/auth/login"
+          class="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-500 transition shadow shadow-purple-900/40">
+          ⚔️ Login
+        </a>
       </div>
     </div>
   </nav>

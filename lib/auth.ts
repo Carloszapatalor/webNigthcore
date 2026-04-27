@@ -11,6 +11,7 @@ export interface JwtPayload {
   username: string;
   role: string;
   exp: number;
+  mcp?: boolean; // must_change_password (abreviado para mantener el JWT pequeño)
 }
 
 export async function signToken(data: Omit<JwtPayload, "exp">): Promise<string> {

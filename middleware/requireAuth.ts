@@ -13,6 +13,7 @@ export async function requireAuth(c: Context, next: Next) {
   if (!token) return c.redirect("/auth/login");
   const payload = await verifyToken(token);
   if (!payload) return c.redirect("/auth/login");
+  if (payload.mcp) return c.redirect("/auth/change-password");
   c.set("user", payload);
   await next();
 }

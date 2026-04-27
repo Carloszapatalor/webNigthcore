@@ -5,11 +5,14 @@ import { publicLayout } from "../views/layout.ts";
 
 const setup = new Hono();
 
-setup.get("/", async (c) => {
+async function superadminExists(): Promise<boolean> {
   const db = getTursoClient();
-  const result = await db.execute(`SELECT COUNT(*) as cnt FROM admin_users`);
-  const count = (result.rows[0] as unknown as { cnt: number }).cnt;
-  if (count > 0) return c.notFound();
+  const result = await db.execute(`SELECT COUNT(*) as cnt FROM admin_users WHERE role = 'superadmin'`);
+  return (result.rows[0] as unknown as { cnt: number }).cnt > 0;
+}
+
+setup.get("/", async (c) => {
+  if (await superadminExists()) return c.notFound();
 
   const content = `
     <div class="max-w-sm mx-auto mt-16">
@@ -39,10 +42,7 @@ setup.get("/", async (c) => {
 });
 
 setup.post("/", async (c) => {
-  const db = getTursoClient();
-  const check = await db.execute(`SELECT COUNT(*) as cnt FROM admin_users`);
-  const count = (check.rows[0] as unknown as { cnt: number }).cnt;
-  if (count > 0) return c.notFound();
+  if (await superadminExists()) return c.notFound();
 
   const body = await c.req.parseBody();
   const username = String(body.username ?? "").trim();
@@ -50,12 +50,13 @@ setup.post("/", async (c) => {
 
   if (!username || password.length < 8) return c.redirect("/setup");
 
-  const id = crypto.randomUUID();
+  const db = getTursoClient();
+  const id   = crypto.randomUUID();
   const hash = await hashPassword(password);
-  const now = new Date().toISOString();
+  const now  = new Date().toISOString();
 
   await db.execute({
-    sql: `INSERT INTO admin_users (id, username, password_hash, role, created_at) VALUES (?, ?, ?, 'superadmin', ?)`,
+    sql: `INSERT INTO admin_users (id, username, password_hash, role, must_change_password, created_at) VALUES (?, ?, ?, 'superadmin', 0, ?)`,
     args: [id, username, hash, now],
   });
 
