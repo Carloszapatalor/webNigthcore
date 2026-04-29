@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { marked } from "npm:marked";
+import DOMPurify from "npm:isomorphic-dompurify";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout, esc } from "../views/layout.ts";
 
@@ -49,7 +50,7 @@ guias.get("/:slug", async (c) => {
 
   type Row = { title: string; content: string; author: string; created_at: string };
   const g = result.rows[0] as unknown as Row;
-  const html = await marked(g.content);
+  const html = DOMPurify.sanitize(await marked(g.content));
 
   const content = `
     <div class="max-w-3xl">

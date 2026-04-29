@@ -67,7 +67,7 @@ export function adminLayout(title: string, content: string, user: User): string 
     { href: "/admin/alters", label: "Alters", icon: "🔀" },
   ];
 
-  if (user.role === "superadmin") {
+  if (user.role === "superadmin" || user.role === "admin") {
     navItems.push({ href: "/admin/usuarios", label: "Usuarios", icon: "🔑" });
   }
 

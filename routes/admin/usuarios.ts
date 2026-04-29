@@ -9,7 +9,7 @@ const usuarios = new Hono();
 
 usuarios.get("/", async (c) => {
   const user = c.get("user");
-  if (user.role !== "superadmin") return c.redirect("/admin");
+  if (user.role === "diputado") return c.redirect("/admin");
 
   const db = getTursoClient();
   const result = await db.execute(
@@ -87,7 +87,7 @@ usuarios.get("/", async (c) => {
           class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none">
           <option value="diputado">diputado</option>
           <option value="admin">admin</option>
-          <option value="superadmin">superadmin</option>
+          ${user.role === "superadmin" ? `<option value="superadmin">superadmin</option>` : ""}
         </select>
         <button type="submit"
           class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-5 py-2 rounded-lg transition">
@@ -121,13 +121,16 @@ usuarios.get("/", async (c) => {
 
 usuarios.post("/crear", async (c) => {
   const user = c.get("user");
-  if (user.role !== "superadmin") return c.redirect("/admin");
+  if (user.role === "diputado") return c.redirect("/admin");
 
   const body = await c.req.parseBody();
   const username  = String(body.username ?? "").trim();
   const password  = String(body.password ?? "");
   const roleInput = String(body.role ?? "");
-  const role = (VALID_ROLES as readonly string[]).includes(roleInput) ? roleInput : "admin";
+
+  // admin no puede crear superadmin
+  const allowedRoles = user.role === "superadmin" ? VALID_ROLES : (["admin", "diputado"] as const);
+  const role = (allowedRoles as readonly string[]).includes(roleInput) ? roleInput : "admin";
 
   if (!username || password.length < 8) {
     return c.redirect("/admin/usuarios?error=Completa+todos+los+campos+correctamente");
@@ -155,7 +158,7 @@ usuarios.post("/crear", async (c) => {
 
 usuarios.post("/:id/resetear", async (c) => {
   const user = c.get("user");
-  if (user.role !== "superadmin") return c.redirect("/admin");
+  if (user.role === "diputado") return c.redirect("/admin");
 
   const id   = c.req.param("id");
   const body = await c.req.parseBody();
@@ -187,7 +190,7 @@ usuarios.post("/:id/resetear", async (c) => {
 
 usuarios.post("/:id/borrar", async (c) => {
   const user = c.get("user");
-  if (user.role !== "superadmin") return c.redirect("/admin");
+  if (user.role === "diputado") return c.redirect("/admin");
 
   const id = c.req.param("id");
   if (id === user.sub) {

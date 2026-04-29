@@ -159,18 +159,26 @@ miembros.post("/sync", async (c) => {
   const clanName = Deno.env.get("CLAN_NAME") ?? "";
   if (!clanName) return c.redirect("/admin/miembros?error=CLAN_NAME+no+configurado");
 
-  const data = await fetch(`${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`)
-    .then((r) => r.json())
-    .catch(() => null);
+  let data: unknown = null;
+  let fetchError = "";
+  try {
+    const res = await fetch(`${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`);
+    data = await res.json();
+    if (!(data as Record<string, unknown>)?.memberlist) {
+      fetchError = `Sin memberlist. Status ${res.status}. Keys: ${Object.keys(data as object ?? {}).join(", ") || "(vacío)"}`;
+    }
+  } catch (e) {
+    fetchError = `Error de red: ${(e as Error).message}`;
+  }
 
-  if (!data?.memberlist) {
-    return c.redirect("/admin/miembros?error=API+no+disponible+(verifica+CLAN_NAME)");
+  if (fetchError) {
+    return c.redirect(`/admin/miembros?error=${encodeURIComponent(fetchError)}`);
   }
 
   const db = getTursoClient();
   const now = new Date().toISOString();
   await db.execute(`DELETE FROM clan_members`);
-  for (const m of data.memberlist as RecruitmentMember[]) {
+  for (const m of (data as { memberlist: RecruitmentMember[] }).memberlist) {
     await db.execute({
       sql: `INSERT OR REPLACE INTO clan_members (member_name, rank, updated_at) VALUES (?, ?, ?)`,
       args: [m.memberName, m.rank, now],

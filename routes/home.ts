@@ -2,8 +2,6 @@ import { Hono } from "hono";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout } from "../views/layout.ts";
 
-const IDLE_BASE = "https://query.idleclans.com";
-
 function getWeekStart(): string {
   const d = new Date();
   const day = d.getUTCDay();
@@ -19,7 +17,6 @@ const home = new Hono();
 
 home.get("/", async (c) => {
   const db = getTursoClient();
-  const clanName = Deno.env.get("CLAN_NAME") ?? "";
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
@@ -40,11 +37,7 @@ home.get("/", async (c) => {
       sql: `SELECT label FROM daily_events WHERE event_date = ?`,
       args: [today],
     }),
-    clanName
-      ? fetch(`${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`).then((r) =>
-          r.json()
-        )
-      : Promise.resolve(null),
+    db.execute(`SELECT COUNT(*) as cnt FROM clan_members`),
   ]);
 
   type RpgRow = { username: string; week_exp: number; title: string; level: number };
@@ -59,8 +52,8 @@ home.get("/", async (c) => {
       : null;
 
   const memberCount =
-    membersResult.status === "fulfilled" && Array.isArray(membersResult.value?.memberlist)
-      ? membersResult.value.memberlist.length
+    membersResult.status === "fulfilled"
+      ? (membersResult.value.rows[0] as unknown as { cnt: number }).cnt
       : "—";
 
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
