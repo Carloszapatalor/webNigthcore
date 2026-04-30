@@ -11,6 +11,8 @@ interface BulletField { icon: string; text: string }
 
 interface GuideData {
   bossEmoji: string;
+  imageUrl: string;
+  imageBase64: string;
   category: string;
   subtitle: string;
   badges: { label: string; color: "gold" | "purple" | "red" | "green" }[];
@@ -39,10 +41,13 @@ function renderGuide(title: string, data: GuideData, author: string, date: strin
     danger:  "text-red-400",
   };
 
-  // HERO
-  const heroEmoji = data.bossEmoji
-    ? `<div class="guide-hero-img">${esc(data.bossEmoji)}</div>`
-    : "";
+  // HERO — prioridad: base64 > URL externa > emoji
+  const imageSrc = data.imageBase64 || data.imageUrl || "";
+  const heroMedia = imageSrc
+    ? `<div class="guide-hero-img"><img src="${esc(imageSrc)}" alt="${esc(title)}" /></div>`
+    : data.bossEmoji
+      ? `<div class="guide-hero-img">${esc(data.bossEmoji)}</div>`
+      : "";
 
   const badges = (data.badges ?? []).map(b => `
     <span class="guide-badge ${badgeColorMap[b.color] ?? badgeColorMap.gold}">
@@ -172,7 +177,10 @@ function renderGuide(title: string, data: GuideData, author: string, date: strin
         box-shadow:0 0 28px var(--g-glow);
         position:relative; z-index:1;
       }
-      .guide-hero-text { position:relative; z-index:1; }
+      .guide-hero-img img {
+        width:100%; height:100%;
+        object-fit:cover; border-radius:50%;
+      }
       .guide-category {
         display:inline-block;
         background:rgba(126,87,194,.25);
@@ -309,7 +317,7 @@ function renderGuide(title: string, data: GuideData, author: string, date: strin
 
     <!-- HERO -->
     <div class="guide-hero">
-      ${heroEmoji}
+      ${heroMedia}
       <div class="guide-hero-text">
         <div class="guide-category">${esc(data.category || "Guía")}</div>
         <div class="guide-title">${esc(title)}</div>
@@ -348,18 +356,22 @@ guias.get("/", async (c) => {
       : list.map((g) => {
           let emoji = "📖";
           let category = "";
+          let imgSrc = "";
           try {
-            const d = JSON.parse(g.content) as { bossEmoji?: string; category?: string };
+            const d = JSON.parse(g.content) as { bossEmoji?: string; category?: string; imageUrl?: string; imageBase64?: string };
             if (d.bossEmoji) emoji = d.bossEmoji;
             if (d.category) category = d.category;
+            imgSrc = d.imageBase64 || d.imageUrl || "";
           } catch { /* content antiguo */ }
+
+          const thumb = imgSrc
+            ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-14 h-14 rounded-full object-cover border border-gray-700 flex-shrink-0" />`
+            : `<div class="w-14 h-14 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-3xl flex-shrink-0">${esc(emoji)}</div>`;
 
           return `
             <a href="/guias/${esc(g.slug)}"
               class="flex items-center gap-4 bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-purple-700 transition group">
-              <div class="w-14 h-14 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-3xl flex-shrink-0">
-                ${esc(emoji)}
-              </div>
+              ${thumb}
               <div>
                 ${category ? `<p class="text-xs text-purple-400 uppercase tracking-widest mb-1">${esc(category)}</p>` : ""}
                 <h3 class="font-semibold text-white text-lg mb-1 group-hover:text-purple-300 transition">${esc(g.title)}</h3>

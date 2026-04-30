@@ -23,6 +23,8 @@ interface BulletField { icon: string; text: string }
 interface GuideData {
   // Hero
   bossEmoji: string;
+  imageUrl: string;       // URL externa
+  imageBase64: string;    // base64 si subió archivo (data:image/...;base64,...)
   category: string;
   subtitle: string;
   // Badges rápidos
@@ -136,7 +138,7 @@ function guideForm(
   const sectionClass = "bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3";
 
   return `
-    <form method="POST" action="${action}" class="space-y-6 max-w-3xl">
+    <form method="POST" action="${action}" enctype="multipart/form-data" class="space-y-6 max-w-3xl">
 
       <!-- Título + publicar -->
       <div class="${sectionClass}">
@@ -148,7 +150,7 @@ function guideForm(
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="${labelClass}">Emoji del boss / ícono</label>
+            <label class="${labelClass}">Emoji del boss (si no subes imagen)</label>
             <input name="bossEmoji" value="${esc(d.bossEmoji)}" placeholder="🐍"
               class="${fieldClass}" />
           </div>
@@ -162,6 +164,37 @@ function guideForm(
           <label class="${labelClass}">Subtítulo / descripción corta</label>
           <input name="subtitle" value="${esc(d.subtitle)}" placeholder="Valle de los Dioses · Idle Clans · Guía completa"
             class="${fieldClass}" />
+        </div>
+
+        <!-- IMAGEN -->
+        <div class="border border-gray-700 rounded-xl p-4 space-y-3 bg-gray-800/40">
+          <p class="text-xs font-semibold text-gray-300 uppercase tracking-wide">🖼️ Imagen del boss</p>
+
+          <!-- Preview actual -->
+          ${d.imageBase64 || d.imageUrl ? `
+            <div class="flex items-center gap-3">
+              <img src="${esc(d.imageBase64 || d.imageUrl)}" alt="preview"
+                class="w-20 h-20 rounded-full object-cover border-2 border-yellow-600" />
+              <div class="text-xs text-gray-400">Imagen actual. Sube una nueva o cambia la URL para reemplazarla.</div>
+            </div>` : `
+            <div class="w-20 h-20 rounded-full bg-gray-700 border-2 border-dashed border-gray-600 flex items-center justify-center text-gray-500 text-xs text-center">
+              Sin imagen
+            </div>`}
+
+          <!-- Opción A: URL externa -->
+          <div>
+            <label class="${labelClass}">Opción A — URL externa (imgur, Discord, etc.)</label>
+            <input name="imageUrl" value="${esc(d.imageUrl)}" placeholder="https://i.imgur.com/..."
+              class="${fieldClass}" />
+          </div>
+
+          <!-- Opción B: Upload -->
+          <div>
+            <label class="${labelClass}">Opción B — Subir archivo (JPG, PNG, WebP · máx 1 MB)</label>
+            <input type="file" name="imageFile" accept="image/jpeg,image/png,image/webp,image/gif"
+              class="w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:bg-purple-700 file:text-white file:text-xs file:cursor-pointer hover:file:bg-purple-600" />
+            <p class="text-xs text-gray-600 mt-1">Si subes un archivo, tiene prioridad sobre la URL. El emoji se usa solo si no hay imagen.</p>
+          </div>
         </div>
       </div>
 
@@ -245,7 +278,7 @@ function guideForm(
 
 // ─── Parser del body del formulario → GuideData ───────────────────────────────
 
-function parseGuideData(body: Record<string, string>): GuideData {
+function parseGuideData(body: Record<string, string>, imageBase64?: string): GuideData {
   const badges = Array.from({ length: 4 }, (_, i) => ({
     label: body[`badge_label_${i}`] ?? "",
     color: (body[`badge_color_${i}`] ?? "gold") as "gold" | "purple" | "red" | "green",
@@ -275,6 +308,8 @@ function parseGuideData(body: Record<string, string>): GuideData {
 
   return {
     bossEmoji: body.bossEmoji ?? "",
+    imageUrl: body.imageUrl ?? "",
+    imageBase64: imageBase64 ?? body.imageBase64 ?? "",
     category: body.category ?? "Guía de Boss",
     subtitle: body.subtitle ?? "",
     badges,
@@ -286,6 +321,20 @@ function parseGuideData(body: Record<string, string>): GuideData {
     drops,
     tipBox: body.tipBox ?? "",
   };
+}
+
+// ─── Helper: extrae base64 del file upload ────────────────────────────────────
+
+async function extractImageBase64(body: Record<string, string | File>): Promise<string> {
+  const file = body["imageFile"];
+  if (!file || typeof file === "string" || file.size === 0) return "";
+  if (file.size > 1.2 * 1024 * 1024) return ""; // ignora si > 1.2 MB
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const b64 = btoa(binary);
+  return `data:${file.type};base64,${b64}`;
 }
 
 // ─── Rutas ────────────────────────────────────────────────────────────────────
@@ -386,13 +435,14 @@ adminGuias.get("/:id/editar", async (c) => {
 
 adminGuias.post("/nueva", async (c) => {
   const user = c.get("user");
-  const body = await c.req.parseBody() as Record<string, string>;
-  const title = (body.title ?? "").trim();
+  const body = await c.req.parseBody() as Record<string, string | File>;
+  const title = ((body.title as string) ?? "").trim();
   const published = body.published === "1" ? 1 : 0;
 
   if (!title) return c.redirect("/admin/guias?error=T%C3%ADtulo+requerido");
 
-  const data = parseGuideData(body);
+  const imageBase64 = await extractImageBase64(body);
+  const data = parseGuideData(body as Record<string, string>, imageBase64);
   const content = JSON.stringify(data);
 
   const db = getTursoClient();
@@ -418,13 +468,26 @@ adminGuias.post("/nueva", async (c) => {
 
 adminGuias.post("/:id/editar", async (c) => {
   const id = c.req.param("id");
-  const body = await c.req.parseBody() as Record<string, string>;
-  const title = (body.title ?? "").trim();
+  const body = await c.req.parseBody() as Record<string, string | File>;
+  const title = ((body.title as string) ?? "").trim();
   const published = body.published === "1" ? 1 : 0;
 
   if (!title) return c.redirect("/admin/guias?error=T%C3%ADtulo+requerido");
 
-  const data = parseGuideData(body);
+  // Si no sube archivo nuevo, conservar el base64 que ya estaba guardado
+  let imageBase64 = await extractImageBase64(body);
+  if (!imageBase64) {
+    const db2 = getTursoClient();
+    const prev = await db2.execute({ sql: `SELECT content FROM guides WHERE id = ?`, args: [id] });
+    if (prev.rows.length > 0) {
+      try {
+        const prevData = JSON.parse((prev.rows[0] as unknown as { content: string }).content) as { imageBase64?: string };
+        imageBase64 = prevData.imageBase64 ?? "";
+      } catch { imageBase64 = ""; }
+    }
+  }
+
+  const data = parseGuideData(body as Record<string, string>, imageBase64);
   const content = JSON.stringify(data);
 
   const db = getTursoClient();
