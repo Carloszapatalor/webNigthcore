@@ -15,6 +15,8 @@ import altersRoute from "./routes/admin/alters.ts";
 
 const app = new Hono();
 
+await initDb();
+
 // Rutas públicas
 app.route("/", homeRoute);
 app.route("/guias", guiasRoute);
