@@ -11,7 +11,17 @@ export function esc(str: any): string {
     .replace(/"/g, "&quot;");
 }
 
-export function publicLayout(title: string, content: string): string {
+export function publicLayout(title: string, content: string, user?: User | null): string {
+  const loginButton = user
+    ? `<a href="/admin" class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-700 transition">
+        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        <span>${esc(user.username)}</span>
+      </a>`
+    : `<a href="/auth/login"
+          class="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-500 transition shadow shadow-purple-900/40">
+          ⚔️ Login
+        </a>`;
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -20,6 +30,11 @@ export function publicLayout(title: string, content: string): string {
   <title>${esc(title)} — Clan Nightcore</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style type="text/tailwindcss">
+    @layer base {
+      ::-webkit-scrollbar { @apply w-2; }
+      ::-webkit-scrollbar-track { @apply bg-gray-950; }
+      ::-webkit-scrollbar-thumb { @apply bg-gray-800 rounded-full hover:bg-gray-700 transition; }
+    }
     .prose h1 { @apply text-2xl font-bold text-white mt-6 mb-3; }
     .prose h2 { @apply text-xl font-bold text-white mt-5 mb-2; }
     .prose h3 { @apply text-lg font-semibold text-gray-200 mt-4 mb-2; }
@@ -37,17 +52,14 @@ export function publicLayout(title: string, content: string): string {
     .prose td { @apply text-gray-300 px-3 py-2 border border-gray-700; }
   </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen">
-  <nav class="bg-gray-900 border-b border-gray-800">
+<body class="bg-gray-950 text-gray-100 min-h-screen selection:bg-purple-500/30">
+  <nav class="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="text-purple-400 font-bold text-xl tracking-wide">⚔️ Nightcore</a>
+      <a href="/" class="text-purple-400 font-bold text-xl tracking-wide hover:scale-105 transition-transform">⚔️ Nightcore</a>
       <div class="flex items-center gap-6 text-sm">
         <a href="/" class="text-gray-300 hover:text-purple-400 transition">Inicio</a>
         <a href="/guias" class="text-gray-300 hover:text-purple-400 transition">Guías</a>
-        <a href="/auth/login"
-          class="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-500 transition shadow shadow-purple-900/40">
-          ⚔️ Login
-        </a>
+        ${loginButton}
       </div>
     </div>
   </nav>
@@ -58,7 +70,7 @@ export function publicLayout(title: string, content: string): string {
 </html>`;
 }
 
-export function adminLayout(title: string, content: string, user: User): string {
+export function adminLayout(title: string, content: string, user: User, currentPath?: string): string {
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: "📊" },
     { href: "/admin/miembros", label: "Miembros", icon: "👥" },
@@ -74,11 +86,16 @@ export function adminLayout(title: string, content: string, user: User): string 
 
   const nav = navItems
     .map(
-      (item) => `
-    <a href="${item.href}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition text-sm">
+      (item) => {
+        const isActive = currentPath === item.href || (item.href !== "/admin" && currentPath?.startsWith(item.href));
+        return `
+    <a href="${item.href}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition text-sm ${
+      isActive ? "bg-purple-900/30 text-purple-300 border border-purple-800/50" : "text-gray-400 hover:text-white hover:bg-gray-800"
+    }">
       <span>${item.icon}</span>
       <span>${item.label}</span>
-    </a>`
+    </a>`;
+      }
     )
     .join("");
 
@@ -96,17 +113,28 @@ export function adminLayout(title: string, content: string, user: User): string 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(title)} — Admin Nightcore</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style type="text/tailwindcss">
+    @layer base {
+      ::-webkit-scrollbar { @apply w-2; }
+      ::-webkit-scrollbar-track { @apply bg-gray-950; }
+      ::-webkit-scrollbar-thumb { @apply bg-gray-800 rounded-full hover:bg-gray-700 transition; }
+    }
+  </style>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex">
+<body class="bg-gray-950 text-gray-100 min-h-screen flex selection:bg-purple-500/30">
   <aside class="w-56 bg-gray-900 border-r border-gray-800 flex flex-col min-h-screen fixed top-0 left-0">
     <div class="p-4 border-b border-gray-800">
       <a href="/" class="text-purple-400 font-bold text-lg">⚔️ Nightcore</a>
       <p class="text-xs text-gray-500 mt-0.5">Panel Admin</p>
     </div>
     <nav class="flex-1 p-3 flex flex-col gap-1 overflow-y-auto">
+      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition text-sm mb-2 border-b border-gray-800 pb-3 rounded-none">
+        <span>🏠</span>
+        <span>Ir al Home</span>
+      </a>
       ${nav}
     </nav>
-    <div class="p-3 border-t border-gray-800">
+    <div class="p-3 border-t border-gray-800 bg-gray-900/50">
       <p class="text-xs text-gray-300 mb-0.5 px-3 font-medium">${esc(user.username)}</p>
       <p class="text-xs ${roleColor} mb-2 px-3">${esc(user.role)}</p>
       <a href="/auth/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-800 transition text-sm">

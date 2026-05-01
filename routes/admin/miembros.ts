@@ -152,7 +152,7 @@ miembros.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Miembros", content, user));
+  return c.html(adminLayout("Miembros", content, user, c.req.path));
 });
 
 import { syncClanMembers } from "../../lib/members.ts";

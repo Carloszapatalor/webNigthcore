@@ -4,12 +4,12 @@ import { publicLayout, esc } from "../views/layout.ts";
 
 // ─── Tipos (deben coincidir con admin/guias.ts) ───────────────────────────────
 
-interface StatField   { label: string; value: string; color: "default" | "accent" | "danger" }
-interface DropField   { icon: string; name: string; rate: string; rare: boolean }
-interface StepField   { text: string }
+export interface StatField   { label: string; value: string; color: "default" | "accent" | "danger" }
+export interface DropField   { icon: string; name: string; rate: string; rare: boolean }
+export interface StepField   { text: string }
 
 
-interface GuideData {
+export interface GuideData {
   bossEmoji: string;
   imageUrl: string;
   imageBase64: string;
@@ -27,31 +27,47 @@ interface GuideData {
 
 // ─── Renderer visual ──────────────────────────────────────────────────────────
 
-function renderGuide(title: string, data: GuideData, author: string, date: string): string {
+export function renderGuide(title: string, data: GuideData, author: string, date: string): string {
   const badgeColorMap: Record<string, string> = {
     gray:   "border-gray-600 text-gray-400",
+    Gris:   "border-gray-600 text-gray-400",
     red:    "border-red-600 text-red-400",
+    Rojo:   "border-red-600 text-red-400",
     green:  "border-green-600 text-green-400",
+    Verde:  "border-green-600 text-green-400",
     yellow: "border-yellow-600 text-yellow-400",
+    Amarillo: "border-yellow-600 text-yellow-400",
     gold:   "border-yellow-600 text-yellow-400",
     blue:   "border-blue-600 text-blue-400",
+    Azul:   "border-blue-600 text-blue-400",
     purple: "border-purple-600 text-purple-400",
+    Morado: "border-purple-600 text-purple-400",
     orange: "border-orange-600 text-orange-400",
+    Naranja: "border-orange-600 text-orange-400",
     cyan:   "border-cyan-600 text-cyan-400",
+    Cyan:   "border-cyan-600 text-cyan-400",
   };
 
   const statColorMap: Record<string, string> = {
     gray:    "text-gray-400",
+    Gris:    "text-gray-400",
     default: "text-gray-400",
     red:     "text-red-400",
+    Rojo:    "text-red-400",
     danger:  "text-red-400",
     green:   "text-green-400",
+    Verde:   "text-green-400",
     yellow:  "text-yellow-400",
+    Amarillo: "text-yellow-400",
     accent:  "text-yellow-400",
     blue:    "text-blue-400",
+    Azul:    "text-blue-400",
     purple:  "text-purple-400",
+    Morado:  "text-purple-400",
     orange:  "text-orange-400",
+    Naranja: "text-orange-400",
     cyan:    "text-cyan-400",
+    Cyan:    "text-cyan-400",
   };
 
   // HERO — prioridad: base64 > URL externa > emoji
@@ -392,7 +408,8 @@ guias.get("/", async (c) => {
     <div class="grid gap-4">${cards}</div>
   `;
 
-  return c.html(publicLayout("Guías", content));
+  const user = c.get("user");
+  return c.html(publicLayout("Guías", content, user));
 });
 
 guias.get("/:slug", async (c) => {
@@ -424,7 +441,8 @@ guias.get("/:slug", async (c) => {
   }
 
   const content = `<div class="max-w-3xl mx-auto">${rendered}</div>`;
-  return c.html(publicLayout(g.title, content));
+  const user = c.get("user");
+  return c.html(publicLayout(g.title, content, user));
 });
 
 export default guias;

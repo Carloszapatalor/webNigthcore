@@ -121,7 +121,7 @@ alters.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Alters", content, user));
+  return c.html(adminLayout("Alters", content, user, c.req.path));
 });
 
 export default alters;

@@ -100,7 +100,7 @@ eventos.get("/", async (c) => {
     <div class="grid grid-cols-3 gap-4">${catalogCards}</div>
   `;
 
-  return c.html(adminLayout("Eventos", content, user));
+  return c.html(adminLayout("Eventos", content, user, c.req.path));
 });
 
 eventos.post("/sortear", async (c) => {

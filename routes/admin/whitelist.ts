@@ -73,7 +73,7 @@ whitelist.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Whitelist", content, user));
+  return c.html(adminLayout("Whitelist", content, user, c.req.path));
 });
 
 whitelist.post("/anadir", async (c) => {

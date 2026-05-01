@@ -13,6 +13,7 @@ import adminGuiasRoute from "./routes/admin/guias.ts";
 import usuariosRoute from "./routes/admin/usuarios.ts";
 import altersRoute from "./routes/admin/alters.ts";
 
+import { optionalAuth } from "./middleware/optionalAuth.ts";
 import { syncClanMembers } from "./lib/members.ts";
 
 const app = new Hono();
@@ -29,6 +30,10 @@ setInterval(() => {
 syncClanMembers();
 
 // Rutas públicas
+app.use("/", optionalAuth);
+app.use("/guias", optionalAuth);
+app.use("/guias/*", optionalAuth);
+
 app.route("/", homeRoute);
 app.route("/guias", guiasRoute);
 app.route("/auth", authRoute);

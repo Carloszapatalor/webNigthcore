@@ -106,7 +106,7 @@ dashboard.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Dashboard", content, user));
+  return c.html(adminLayout("Dashboard", content, user, c.req.path));
 });
 
 export default dashboard;

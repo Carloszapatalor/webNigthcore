@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
-import { adminLayout, esc } from "../../views/layout.ts";
+import { adminLayout, publicLayout, esc } from "../../views/layout.ts";
+import { renderGuide, type GuideData } from "../guias.ts";
 
 function toSlug(title: string): string {
   return title
@@ -19,42 +20,30 @@ interface StatField { label: string; value: string; color: "default" | "accent" 
 interface DropField { icon: string; name: string; rate: string; rare: boolean }
 interface StepField { text: string }
 
-
-interface GuideData {
-  // Hero
-  bossEmoji: string;
-  imageUrl: string;       // URL externa
-  imageBase64: string;    // base64 si subió archivo (data:image/...;base64,...)
-  category: string;
-  subtitle: string;
-  // Badges rápidos
-  badges: { label: string; color: "gold" | "purple" | "red" | "green" }[];
-  // Info box intro
-  infoBox: string;
-  // Stats grid
-  stats: StatField[];
-  // Estrategia
-  warningBox: string;
-  steps: StepField[];
-
-  // Drops
-  drops: DropField[];
-  // Tip final
-  tipBox: string;
-}
-
 // ─── Helpers de formulario ────────────────────────────────────────────────────
 
 function badgesInputs(badges: { label: string; color: string }[]): string {
   const rows = Array.from({ length: 4 }, (_, i) => {
     const b = badges[i] ?? { label: "", color: "gold" };
+    const isKeyBadge = i === 3;
+    const colorOptions = [
+      { v: "gray", l: "Gris" },
+      { v: "red", l: "Rojo" },
+      { v: "green", l: "Verde" },
+      { v: "yellow", l: "Amarillo" },
+      { v: "blue", l: "Azul" },
+      { v: "purple", l: "Morado" },
+      { v: "orange", l: "Naranja" },
+      { v: "cyan", l: "Cian" }
+    ];
     return `
       <div class="flex gap-2 items-center">
-        <input name="badge_label_${i}" value="${esc(b.label)}" placeholder="💛 HP: 425"
+        <input name="badge_label_${i}" value="${esc(b.label)}" placeholder="${isKeyBadge ? "🔑 Tipo de llave..." : "💛 HP: 425"}"
           class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
         <select name="badge_color_${i}" class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:border-purple-500 focus:outline-none">
-          ${["gray", "red", "green", "yellow", "blue", "purple", "orange", "cyan"].map(c => `<option value="${c}" ${b.color === c ? "selected" : ""}>${c}</option>`).join("")}
+          ${colorOptions.map(c => `<option value="${c.v}" ${b.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
+        ${isKeyBadge ? `<span class="text-[10px] text-gray-500 uppercase font-bold w-12">Llave</span>` : ""}
       </div>`;
   }).join("");
   return rows;
@@ -63,6 +52,16 @@ function badgesInputs(badges: { label: string; color: string }[]): string {
 function statsInputs(stats: StatField[]): string {
   return Array.from({ length: 4 }, (_, i) => {
     const s = stats[i] ?? { label: "", value: "", color: "default" };
+    const colorOptions = [
+      { v: "gray", l: "Gris" },
+      { v: "red", l: "Rojo" },
+      { v: "green", l: "Verde" },
+      { v: "yellow", l: "Amarillo" },
+      { v: "blue", l: "Azul" },
+      { v: "purple", l: "Morado" },
+      { v: "orange", l: "Naranja" },
+      { v: "cyan", l: "Cian" }
+    ];
     return `
       <div class="grid grid-cols-3 gap-2">
         <input name="stat_label_${i}" value="${esc(s.label)}" placeholder="HP"
@@ -70,7 +69,7 @@ function statsInputs(stats: StatField[]): string {
         <input name="stat_value_${i}" value="${esc(s.value)}" placeholder="425"
           class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
         <select name="stat_color_${i}" class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:border-purple-500 focus:outline-none">
-          ${["gray", "red", "green", "yellow", "blue", "purple", "orange", "cyan"].map(c => `<option value="${c}" ${s.color === c ? "selected" : ""}>${c}</option>`).join("")}
+          ${colorOptions.map(c => `<option value="${c.v}" ${s.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
       </div>`;
   }).join("");
@@ -341,7 +340,12 @@ adminGuias.get("/", async (c) => {
       ? `<tr><td colspan="5" class="py-8 text-center text-gray-600 text-sm">No hay guías aún</td></tr>`
       : list.map((g) => `
           <tr class="border-b border-gray-800 hover:bg-gray-800/40 text-sm">
-            <td class="py-3 px-4 font-medium">${esc(g.title)}</td>
+            <td class="py-3 px-4 font-medium">
+              <a href="/admin/guias/${g.id}/preview" target="_blank" class="text-white hover:text-purple-400 transition flex items-center gap-2">
+                <span>${esc(g.title)}</span>
+                <span class="text-[10px] opacity-50 font-normal">↗</span>
+              </a>
+            </td>
             <td class="py-3 px-4 text-gray-400">${esc(g.author)}</td>
             <td class="py-3 px-4">
               <span class="inline-block text-xs px-2 py-0.5 rounded-full ${g.published ? "bg-green-900/50 text-green-400" : "bg-gray-800 text-gray-500"}">
@@ -390,12 +394,12 @@ adminGuias.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Guías", content, user));
+  return c.html(adminLayout("Guías", content, user, "/admin/guias"));
 });
 
 adminGuias.get("/nueva", (c) => {
   const user = c.get("user");
-  return c.html(adminLayout("Nueva guía", guideForm("", null, null), user));
+  return c.html(adminLayout("Nueva guía", guideForm("", null, null), user, "/admin/guias"));
 });
 
 adminGuias.get("/:id/editar", async (c) => {
@@ -413,7 +417,28 @@ adminGuias.get("/:id/editar", async (c) => {
   let data: GuideData | null = null;
   try { data = JSON.parse(g.content) as GuideData; } catch { data = null; }
 
-  return c.html(adminLayout("Editar guía", guideForm(g.title, data, g.id), user));
+  return c.html(adminLayout("Editar guía", guideForm(g.title, data, g.id), user, "/admin/guias"));
+});
+
+adminGuias.get("/:id/preview", async (c) => {
+  const id = c.req.param("id");
+  const db = getTursoClient();
+  const result = await db.execute({
+    sql: `SELECT title, content, author, created_at FROM guides WHERE id = ?`,
+    args: [id],
+  });
+  if (result.rows.length === 0) return c.notFound();
+  type Row = { title: string; content: string; author: string; created_at: string };
+  const g = result.rows[0] as unknown as Row;
+
+  try {
+    const data = JSON.parse(g.content) as GuideData;
+    const rendered = renderGuide(g.title, data, g.author, g.created_at.slice(0, 10));
+    const content = `<div class="max-w-3xl mx-auto">${rendered}</div>`;
+    return c.html(publicLayout(g.title, content));
+  } catch (e) {
+    return c.text("Error al renderizar la vista previa: " + (e as Error).message);
+  }
 });
 
 adminGuias.post("/nueva", async (c) => {

@@ -116,7 +116,7 @@ usuarios.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Usuarios", content, user));
+  return c.html(adminLayout("Usuarios", content, user, c.req.path));
 });
 
 usuarios.post("/crear", async (c) => {

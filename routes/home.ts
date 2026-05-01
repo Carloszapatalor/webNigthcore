@@ -117,10 +117,11 @@ home.get("/", async (c) => {
           ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-16 h-16 rounded-xl object-cover object-center border border-gray-700 flex-shrink-0 shadow-lg" />`
           : `<div class="w-16 h-16 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center text-3xl flex-shrink-0 shadow-lg">${esc(emoji)}</div>`;
 
-        const renderedBadges = badges.slice(0, 3).map(b => `
-          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${badgeColorMap[b.color] || badgeColorMap.gray} bg-gray-900/50">
-            ${esc(b.label)}
-          </span>`).join("");
+        const keyBadge = badges[3];
+        const renderedBadges = keyBadge && keyBadge.label.trim() ? `
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${badgeColorMap[keyBadge.color] || badgeColorMap.gray} bg-gray-900/50">
+            ${esc(keyBadge.label)}
+          </span>` : "";
 
         return `
           <a href="/guias/${esc(g.slug)}" class="flex gap-4 bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-purple-700 transition group hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-900/20 duration-300">
@@ -189,7 +190,8 @@ home.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(publicLayout("Inicio", content));
+  const user = c.get("user");
+  return c.html(publicLayout("Inicio", content, user));
 });
 
 export default home;
