@@ -15,10 +15,10 @@ function toSlug(title: string): string {
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-interface StatField  { label: string; value: string; color: "default" | "accent" | "danger" }
-interface DropField  { icon: string; name: string; rate: string; rare: boolean }
-interface StepField  { text: string }
-interface BulletField { icon: string; text: string }
+interface StatField { label: string; value: string; color: "default" | "accent" | "danger" }
+interface DropField { icon: string; name: string; rate: string; rare: boolean }
+interface StepField { text: string }
+
 
 interface GuideData {
   // Hero
@@ -36,7 +36,7 @@ interface GuideData {
   // Estrategia
   warningBox: string;
   steps: StepField[];
-  bullets: BulletField[];
+
   // Drops
   drops: DropField[];
   // Tip final
@@ -53,7 +53,7 @@ function badgesInputs(badges: { label: string; color: string }[]): string {
         <input name="badge_label_${i}" value="${esc(b.label)}" placeholder="💛 HP: 425"
           class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
         <select name="badge_color_${i}" class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:border-purple-500 focus:outline-none">
-          ${["gold","purple","red","green"].map(c => `<option value="${c}" ${b.color===c?"selected":""}>${c}</option>`).join("")}
+          ${["gray", "red", "green", "yellow", "blue", "purple", "orange", "cyan"].map(c => `<option value="${c}" ${b.color === c ? "selected" : ""}>${c}</option>`).join("")}
         </select>
       </div>`;
   }).join("");
@@ -70,7 +70,7 @@ function statsInputs(stats: StatField[]): string {
         <input name="stat_value_${i}" value="${esc(s.value)}" placeholder="425"
           class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
         <select name="stat_color_${i}" class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white focus:border-purple-500 focus:outline-none">
-          ${["default","accent","danger"].map(c => `<option value="${c}" ${s.color===c?"selected":""}>${c}</option>`).join("")}
+          ${["gray", "red", "green", "yellow", "blue", "purple", "orange", "cyan"].map(c => `<option value="${c}" ${s.color === c ? "selected" : ""}>${c}</option>`).join("")}
         </select>
       </div>`;
   }).join("");
@@ -81,39 +81,28 @@ function stepsInputs(steps: StepField[]): string {
     const s = steps[i] ?? { text: "" };
     return `
       <div class="flex gap-2 items-center">
-        <span class="w-6 h-6 rounded-full bg-yellow-600 text-black text-xs font-bold flex items-center justify-center flex-shrink-0">${i+1}</span>
-        <input name="step_${i}" value="${esc(s.text)}" placeholder="Paso ${i+1}..."
+        <span class="w-6 h-6 rounded-full bg-yellow-600 text-black text-xs font-bold flex items-center justify-center flex-shrink-0">${i + 1}</span>
+        <input name="step_${i}" value="${esc(s.text)}" placeholder="Paso ${i + 1}..."
           class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
       </div>`;
   }).join("");
 }
 
-function bulletsInputs(bullets: BulletField[]): string {
-  return Array.from({ length: 4 }, (_, i) => {
-    const b = bullets[i] ?? { icon: "", text: "" };
-    return `
-      <div class="flex gap-2 items-center">
-        <input name="bullet_icon_${i}" value="${esc(b.icon)}" placeholder="✅"
-          class="w-14 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-sm text-center focus:border-purple-500 focus:outline-none" />
-        <input name="bullet_text_${i}" value="${esc(b.text)}" placeholder="Recomendación..."
-          class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
-      </div>`;
-  }).join("");
-}
+
 
 function dropsInputs(drops: DropField[]): string {
   return Array.from({ length: 5 }, (_, i) => {
     const d = drops[i] ?? { icon: "", name: "", rate: "", rare: false };
     return `
       <div class="flex gap-2 items-center">
-        <input name="drop_icon_${i}" value="${esc(d.icon)}" placeholder="💎"
+        <input name="drop_icon_${i}" value="${esc(d.icon)}" placeholder="💎" onclick="this.value=''"
           class="w-14 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-sm text-center focus:border-purple-500 focus:outline-none" />
         <input name="drop_name_${i}" value="${esc(d.name)}" placeholder="Nombre del drop"
           class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
         <input name="drop_rate_${i}" value="${esc(d.rate)}" placeholder="1%"
           class="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-white text-sm focus:border-purple-500 focus:outline-none" />
         <label class="flex items-center gap-1 text-xs text-gray-400 whitespace-nowrap">
-          <input type="checkbox" name="drop_rare_${i}" value="1" ${d.rare?"checked":""} class="accent-yellow-500" /> Raro
+          <input type="checkbox" name="drop_rare_${i}" value="1" ${d.rare ? "checked" : ""} class="accent-yellow-500" /> Raro
         </label>
       </div>`;
   }).join("");
@@ -128,9 +117,9 @@ function guideForm(
 ): string {
   const action = guideId ? `/admin/guias/${guideId}/editar` : "/admin/guias/nueva";
   const d = data ?? {
-    bossEmoji: "", category: "Guía de Boss", subtitle: "",
+    bossEmoji: "", imageUrl: "", imageBase64: "", category: "Guía de Boss", subtitle: "",
     badges: [], infoBox: "", stats: [], warningBox: "",
-    steps: [], bullets: [], drops: [], tipBox: "",
+    steps: [], drops: [], tipBox: "",
   };
 
   const fieldClass = "w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:border-purple-500 focus:outline-none";
@@ -235,10 +224,7 @@ function guideForm(
           <label class="${labelClass}">Pasos numerados (hasta 4)</label>
           <div class="space-y-2 mt-1">${stepsInputs(d.steps)}</div>
         </div>
-        <div>
-          <label class="${labelClass}">Viñetas ✅/❌ (hasta 4)</label>
-          <div class="space-y-2 mt-1">${bulletsInputs(d.bullets)}</div>
-        </div>
+
       </div>
 
       <!-- Drops -->
@@ -294,10 +280,7 @@ function parseGuideData(body: Record<string, string>, imageBase64?: string): Gui
     text: body[`step_${i}`] ?? "",
   })).filter(s => s.text.trim() !== "");
 
-  const bullets = Array.from({ length: 4 }, (_, i) => ({
-    icon: body[`bullet_icon_${i}`] ?? "",
-    text: body[`bullet_text_${i}`] ?? "",
-  })).filter(b => b.text.trim() !== "");
+
 
   const drops = Array.from({ length: 5 }, (_, i) => ({
     icon: body[`drop_icon_${i}`] ?? "",
@@ -317,7 +300,7 @@ function parseGuideData(body: Record<string, string>, imageBase64?: string): Gui
     stats,
     warningBox: body.warningBox ?? "",
     steps,
-    bullets,
+
     drops,
     tipBox: body.tipBox ?? "",
   };
@@ -370,10 +353,10 @@ adminGuias.get("/", async (c) => {
               <div class="flex gap-4">
                 <a href="/admin/guias/${g.id}/editar" class="text-purple-400 hover:text-purple-300 text-xs">Editar</a>
                 ${g.published === 0
-                  ? `<form method="POST" action="/admin/guias/${g.id}/publicar" class="inline">
+          ? `<form method="POST" action="/admin/guias/${g.id}/publicar" class="inline">
                        <button type="submit" class="text-green-400 hover:text-green-300 text-xs">Publicar</button>
                      </form>`
-                  : `<form method="POST" action="/admin/guias/${g.id}/despublicar" class="inline">
+          : `<form method="POST" action="/admin/guias/${g.id}/despublicar" class="inline">
                        <button type="submit" class="text-yellow-400 hover:text-yellow-300 text-xs">Despublicar</button>
                      </form>`}
                 <form method="POST" action="/admin/guias/${g.id}/borrar" class="inline"

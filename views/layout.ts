@@ -2,8 +2,9 @@ import type { JwtPayload } from "../lib/auth.ts";
 
 export type User = JwtPayload;
 
-export function esc(str: string): string {
-  return str
+export function esc(str: any): string {
+  if (str == null) return "";
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

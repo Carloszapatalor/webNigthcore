@@ -7,7 +7,7 @@ import { publicLayout, esc } from "../views/layout.ts";
 interface StatField   { label: string; value: string; color: "default" | "accent" | "danger" }
 interface DropField   { icon: string; name: string; rate: string; rare: boolean }
 interface StepField   { text: string }
-interface BulletField { icon: string; text: string }
+
 
 interface GuideData {
   bossEmoji: string;
@@ -20,7 +20,7 @@ interface GuideData {
   stats: StatField[];
   warningBox: string;
   steps: StepField[];
-  bullets: BulletField[];
+
   drops: DropField[];
   tipBox: string;
 }
@@ -29,16 +29,29 @@ interface GuideData {
 
 function renderGuide(title: string, data: GuideData, author: string, date: string): string {
   const badgeColorMap: Record<string, string> = {
-    gold:   "border-yellow-600 text-yellow-400",
-    purple: "border-purple-600 text-purple-300",
+    gray:   "border-gray-600 text-gray-400",
     red:    "border-red-600 text-red-400",
     green:  "border-green-600 text-green-400",
+    yellow: "border-yellow-600 text-yellow-400",
+    gold:   "border-yellow-600 text-yellow-400",
+    blue:   "border-blue-600 text-blue-400",
+    purple: "border-purple-600 text-purple-400",
+    orange: "border-orange-600 text-orange-400",
+    cyan:   "border-cyan-600 text-cyan-400",
   };
 
   const statColorMap: Record<string, string> = {
-    default: "text-gray-100",
-    accent:  "text-yellow-400",
+    gray:    "text-gray-400",
+    default: "text-gray-400",
+    red:     "text-red-400",
     danger:  "text-red-400",
+    green:   "text-green-400",
+    yellow:  "text-yellow-400",
+    accent:  "text-yellow-400",
+    blue:    "text-blue-400",
+    purple:  "text-purple-400",
+    orange:  "text-orange-400",
+    cyan:    "text-cyan-400",
   };
 
   // HERO — prioridad: base64 > URL externa > emoji
@@ -86,23 +99,14 @@ function renderGuide(title: string, data: GuideData, author: string, date: strin
         </div>`).join("")}
     </div>` : "";
 
-  const bullets = (data.bullets ?? []).length > 0 ? `
-    <ul class="guide-bullet-list">
-      ${data.bullets.map(b => `
-        <li class="guide-bullet-item">
-          <span class="guide-bullet-icon">${esc(b.icon)}</span>
-          <span>${esc(b.text)}</span>
-        </li>`).join("")}
-    </ul>` : "";
 
-  const estrategia = (data.warningBox || steps || bullets) ? `
+
+  const estrategia = (data.warningBox || steps) ? `
     <div class="guide-section">
       <div class="guide-section-header">⚔️ Estrategia</div>
       <div class="guide-section-body">
         ${warningBox}
         ${steps}
-        ${steps && bullets ? `<div class="guide-divider"></div>` : ""}
-        ${bullets}
       </div>
     </div>` : "";
 
@@ -365,7 +369,7 @@ guias.get("/", async (c) => {
           } catch { /* content antiguo */ }
 
           const thumb = imgSrc
-            ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-14 h-14 rounded-full object-cover border border-gray-700 flex-shrink-0" />`
+            ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-14 h-14 rounded-full object-cover object-center border border-gray-700 flex-shrink-0" />`
             : `<div class="w-14 h-14 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-3xl flex-shrink-0">${esc(emoji)}</div>`;
 
           return `
@@ -419,7 +423,7 @@ guias.get("/:slug", async (c) => {
     `;
   }
 
-  const content = `<div class="max-w-3xl">${rendered}</div>`;
+  const content = `<div class="max-w-3xl mx-auto">${rendered}</div>`;
   return c.html(publicLayout(g.title, content));
 });
 

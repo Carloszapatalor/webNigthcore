@@ -20,7 +20,7 @@ home.get("/", async (c) => {
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
-  const [rankingResult, eventResult, membersResult] = await Promise.allSettled([
+  const [rankingResult, eventResult, membersResult, guidesResult] = await Promise.allSettled([
     db.execute({
       sql: `SELECT d.username, SUM(d.total_exp) as week_exp,
                    COALESCE(p.title, '🌱 Buscador') as title,
@@ -38,6 +38,7 @@ home.get("/", async (c) => {
       args: [today],
     }),
     db.execute(`SELECT COUNT(*) as cnt FROM clan_members`),
+    db.execute(`SELECT slug, title, author, created_at, content FROM guides WHERE published = 1 ORDER BY created_at DESC LIMIT 6`)
   ]);
 
   type RpgRow = { username: string; week_exp: number; title: string; level: number };
@@ -55,6 +56,12 @@ home.get("/", async (c) => {
     membersResult.status === "fulfilled"
       ? (membersResult.value.rows[0] as unknown as { cnt: number }).cnt
       : "—";
+
+  type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
+  const guides = 
+    guidesResult.status === "fulfilled"
+      ? (guidesResult.value.rows as unknown as GuideRow[])
+      : [];
 
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
 
@@ -76,6 +83,56 @@ home.get("/", async (c) => {
   const eventCard = eventLabel
     ? eventLabel.split("—")[0].trim()
     : `<span class="text-gray-600">Sin sortear</span>`;
+
+  const badgeColorMap: Record<string, string> = {
+    gray:   "border-gray-600 text-gray-400",
+    red:    "border-red-600 text-red-400",
+    green:  "border-green-600 text-green-400",
+    yellow: "border-yellow-600 text-yellow-400",
+    gold:   "border-yellow-600 text-yellow-400",
+    blue:   "border-blue-600 text-blue-400",
+    purple: "border-purple-600 text-purple-400",
+    orange: "border-orange-600 text-orange-400",
+    cyan:   "border-cyan-600 text-cyan-400",
+  };
+
+  const esc = (str: any) => str == null ? "" : String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  const guideCards = guides.length === 0 
+    ? `<p class="text-gray-500 text-sm">Aún no hay guías publicadas.</p>`
+    : `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">` + guides.map(g => {
+        let emoji = "📖";
+        let category = "";
+        let imgSrc = "";
+        let badges: {label: string; color: string}[] = [];
+        try {
+          const d = JSON.parse(g.content);
+          if (d.bossEmoji) emoji = d.bossEmoji;
+          if (d.category) category = d.category;
+          imgSrc = d.imageBase64 || d.imageUrl || "";
+          if (d.badges) badges = d.badges;
+        } catch {}
+
+        const thumb = imgSrc
+          ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-16 h-16 rounded-xl object-cover object-center border border-gray-700 flex-shrink-0 shadow-lg" />`
+          : `<div class="w-16 h-16 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center text-3xl flex-shrink-0 shadow-lg">${esc(emoji)}</div>`;
+
+        const renderedBadges = badges.slice(0, 3).map(b => `
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${badgeColorMap[b.color] || badgeColorMap.gray} bg-gray-900/50">
+            ${esc(b.label)}
+          </span>`).join("");
+
+        return `
+          <a href="/guias/${esc(g.slug)}" class="flex gap-4 bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-purple-700 transition group hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-900/20 duration-300">
+            ${thumb}
+            <div class="flex-1 min-w-0 flex flex-col justify-center">
+              ${category ? `<p class="text-[10px] text-purple-400 uppercase tracking-widest mb-1 truncate">${esc(category)}</p>` : ""}
+              <h3 class="font-semibold text-white text-sm mb-1 truncate group-hover:text-purple-300 transition">${esc(g.title)}</h3>
+              ${renderedBadges ? `<div class="flex flex-wrap gap-1 mb-1">${renderedBadges}</div>` : ""}
+              <p class="text-gray-500 text-[11px] truncate">Por ${esc(g.author)}</p>
+            </div>
+          </a>`;
+      }).join("") + `</div>`;
 
   const content = `
     <div class="mb-8">
@@ -122,11 +179,14 @@ home.get("/", async (c) => {
       </table>
     </div>
 
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold">📖 Guías del clan</h2>
-      <a href="/guias" class="text-purple-400 hover:text-purple-300 text-sm transition">Ver todas →</a>
+    <div class="mb-12">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xl font-bold text-white">📖 Guías del clan</h2>
+        <a href="/guias" class="text-purple-400 hover:text-purple-300 text-sm transition font-medium">Ver todas →</a>
+      </div>
+      <p class="text-gray-400 text-sm mb-4">Consulta las guías más recientes para nuevos y veteranos.</p>
+      ${guideCards}
     </div>
-    <p class="text-gray-500 text-sm">Consulta nuestras guías para nuevos y veteranos del clan.</p>
   `;
 
   return c.html(publicLayout("Inicio", content));

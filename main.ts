@@ -13,9 +13,20 @@ import adminGuiasRoute from "./routes/admin/guias.ts";
 import usuariosRoute from "./routes/admin/usuarios.ts";
 import altersRoute from "./routes/admin/alters.ts";
 
+import { syncClanMembers } from "./lib/members.ts";
+
 const app = new Hono();
 
 await initDb();
+
+// Sincronización automática de miembros cada 4 horas
+setInterval(() => {
+  console.log("Iniciando sincronización automática...");
+  syncClanMembers();
+}, 4 * 60 * 60 * 1000);
+
+// Ejecutar una vez al inicio
+syncClanMembers();
 
 // Rutas públicas
 app.route("/", homeRoute);
