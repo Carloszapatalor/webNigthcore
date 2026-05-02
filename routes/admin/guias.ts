@@ -33,15 +33,15 @@ function badgesInputs(badges: { label: string; color: string }[]): string {
     const b = badges[i] ?? { label: "", color: "gold" };
     const isKeyBadge = i === 3;
     return `
-      <div class="flex gap-3 items-center bg-black/20 p-3 rounded-xl border border-yellow-900/5">
+      <div class="flex gap-3 items-center bg-black/30 p-3 rounded-xl border border-yellow-900/20">
         <div class="flex-1">
           <input name="badge_label_${i}" value="${esc(b.label)}" placeholder="${isKeyBadge ? "🔑 Tipo de llave..." : "💛 HP: 425"}"
-            class="w-full bg-stone-950 border border-yellow-900/10 rounded-lg px-3 py-2 text-white text-xs focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
+            class="w-full bg-stone-950 border border-yellow-900/30 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500 focus:outline-none font-rpg uppercase tracking-wider" />
         </div>
-        <select name="badge_color_${i}" class="bg-stone-950 border border-yellow-900/10 rounded-lg px-2 py-2 text-[10px] text-stone-400 focus:border-yellow-600 focus:outline-none font-rpg uppercase">
+        <select name="badge_color_${i}" class="bg-stone-900 border border-yellow-700/50 rounded-lg px-3 py-2 text-xs text-yellow-500 font-bold focus:border-yellow-500 focus:outline-none font-rpg uppercase transition-all shadow-sm cursor-pointer">
           ${colorOptions.map(c => `<option value="${c.v}" ${b.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
-        ${isKeyBadge ? `<span class="text-[9px] text-yellow-700 uppercase font-bold w-12 font-rpg">Especial</span>` : ""}
+        ${isKeyBadge ? `<span class="text-[10px] text-yellow-500 uppercase font-bold w-12 font-rpg">Especial</span>` : ""}
       </div>`;
   }).join("");
 }
@@ -55,12 +55,12 @@ function statsInputs(stats: StatField[]): string {
   return Array.from({ length: 4 }, (_, i) => {
     const s = stats[i] ?? { label: "", value: "", color: "default" };
     return `
-      <div class="grid grid-cols-3 gap-3 bg-black/20 p-3 rounded-xl border border-yellow-900/5">
+      <div class="grid grid-cols-3 gap-3 bg-black/30 p-3 rounded-xl border border-yellow-900/20">
         <input name="stat_label_${i}" value="${esc(s.label)}" placeholder="Ataque"
-          class="bg-stone-950 border border-yellow-900/10 rounded-lg px-3 py-2 text-white text-xs focus:border-yellow-600 focus:outline-none font-rpg uppercase" />
+          class="bg-stone-950 border border-yellow-900/30 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500 focus:outline-none font-rpg uppercase tracking-wider" />
         <input name="stat_value_${i}" value="${esc(s.value)}" placeholder="99"
-          class="bg-stone-950 border border-yellow-900/10 rounded-lg px-3 py-2 text-white text-xs focus:border-yellow-600 focus:outline-none font-rpg" />
-        <select name="stat_color_${i}" class="bg-stone-950 border border-yellow-900/10 rounded-lg px-2 py-2 text-[10px] text-stone-400 focus:border-yellow-600 focus:outline-none font-rpg uppercase">
+          class="bg-stone-950 border border-yellow-900/30 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500 focus:outline-none font-rpg tracking-wider" />
+        <select name="stat_color_${i}" class="bg-stone-900 border border-yellow-700/50 rounded-lg px-3 py-2 text-xs text-yellow-500 font-bold focus:border-yellow-500 focus:outline-none font-rpg uppercase transition-all shadow-sm cursor-pointer">
           ${colorOptions.map(c => `<option value="${c.v}" ${s.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
       </div>`;
@@ -71,10 +71,10 @@ function stepsInputs(steps: StepField[]): string {
   return Array.from({ length: 4 }, (_, i) => {
     const s = steps[i] ?? { text: "" };
     return `
-      <div class="flex gap-3 items-center bg-black/20 p-3 rounded-xl border border-yellow-900/5">
-        <span class="w-6 h-6 rounded bg-yellow-700 text-stone-950 text-[10px] font-bold flex items-center justify-center flex-shrink-0 font-rpg">${i + 1}</span>
+      <div class="flex gap-3 items-center bg-black/30 p-3 rounded-xl border border-yellow-900/20">
+        <span class="w-8 h-8 rounded bg-yellow-600 text-stone-950 text-xs font-bold flex items-center justify-center flex-shrink-0 font-rpg">${i + 1}</span>
         <input name="step_${i}" value="${esc(s.text)}" placeholder="Paso ${i + 1} del ritual..."
-          class="flex-1 bg-stone-950 border border-yellow-900/10 rounded-lg px-3 py-2 text-white text-xs focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
+          class="flex-1 bg-stone-950 border border-yellow-900/30 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500 focus:outline-none font-rpg uppercase tracking-wider" />
       </div>`;
   }).join("");
 }
@@ -85,29 +85,29 @@ function dropsInputs(drops: DropField[]): string {
     return `
       <div class="flex flex-col gap-1 w-full">
         ${i === 0 ? `
-        <div class="flex gap-3 px-3 text-[9px] text-stone-600 font-rpg uppercase tracking-widest mb-1">
+        <div class="flex gap-3 px-3 text-[11px] text-stone-400 font-bold font-rpg uppercase tracking-widest mb-1">
           <div class="w-12 text-center">Emoji</div>
           <div class="flex-1">Nombre del Objeto</div>
           <div class="w-16 text-center">Ratio</div>
-          <div class="w-12"></div>
+          <div class="w-16"></div>
         </div>` : ""}
-        <div class="flex gap-3 items-center bg-black/20 p-3 rounded-xl border border-yellow-900/5">
+        <div class="flex gap-3 items-center bg-black/30 p-3 rounded-xl border border-yellow-900/20">
           <input name="drop_icon_${i}" value="${esc(d.icon)}" placeholder="💎"
             onfocus="this.placeholder=''" onblur="this.placeholder='💎'"
-            class="w-12 bg-stone-950 border border-yellow-900/10 rounded-lg px-2 py-2 text-white text-center focus:border-yellow-600 focus:outline-none transition-all" title="Coloca un Emoji aquí" />
+            class="w-12 bg-stone-950 border border-yellow-900/30 rounded-lg px-2 py-2 text-white text-center text-sm focus:border-yellow-500 focus:outline-none transition-all" title="Coloca un Emoji aquí" />
           
           <input name="drop_name_${i}" value="${esc(d.name)}" placeholder="Ej: Espada de Fuego"
             onfocus="this.placeholder=''" onblur="this.placeholder='Ej: Espada de Fuego'"
-            class="flex-1 bg-stone-950 border border-yellow-900/10 rounded-lg px-3 py-2 text-white text-xs focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition-all" title="Escribe el nombre del objeto" />
+            class="flex-1 bg-stone-950 border border-yellow-900/30 rounded-lg px-3 py-2 text-white text-sm focus:border-yellow-500 focus:outline-none font-rpg uppercase tracking-wider transition-all" title="Escribe el nombre del objeto" />
           
           <input name="drop_rate_${i}" value="${esc(d.rate)}" placeholder="1%"
             onfocus="this.placeholder=''" onblur="this.placeholder='1%'"
-            class="w-16 bg-stone-950 border border-yellow-900/10 rounded-lg px-2 py-2 text-white text-xs text-center focus:border-yellow-600 focus:outline-none font-mono transition-all" title="Probabilidad de obtención" />
+            class="w-16 bg-stone-950 border border-yellow-900/30 rounded-lg px-2 py-2 text-white text-sm text-center focus:border-yellow-500 focus:outline-none font-mono transition-all" title="Probabilidad de obtención" />
           
-          <label class="flex items-center gap-2 text-[10px] text-stone-500 font-rpg uppercase cursor-pointer select-none group">
+          <label class="flex items-center gap-2 text-xs text-stone-300 font-bold font-rpg uppercase cursor-pointer select-none group w-16">
             <input type="checkbox" name="drop_rare_${i}" value="1" ${d.rare ? "checked" : ""} 
-              class="w-4 h-4 rounded border-stone-800 bg-stone-950 accent-yellow-600" />
-            <span class="group-hover:text-yellow-600 transition">Raro</span>
+              class="w-5 h-5 rounded border-stone-800 bg-stone-950 accent-yellow-500 cursor-pointer" />
+            <span class="group-hover:text-yellow-500 transition">Raro</span>
           </label>
         </div>
       </div>`;
@@ -123,9 +123,9 @@ function guideForm(title: string, data: GuideData | null, guideId: string | null
     badges: [], infoBox: "", stats: [], warningBox: "", steps: [], drops: [], tipBox: "",
   };
 
-  const fieldClass = "w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest placeholder:text-stone-700";
-  const labelClass = "block text-[10px] text-stone-500 mb-2 uppercase tracking-[0.2em] font-rpg italic";
-  const sectionClass = "bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 space-y-6 shadow-xl relative overflow-hidden";
+  const fieldClass = "w-full bg-stone-950 border border-yellow-900/30 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-500 focus:outline-none font-rpg uppercase tracking-wider placeholder:text-stone-600 transition-colors";
+  const labelClass = "block text-xs text-stone-400 font-bold mb-2 uppercase tracking-widest font-rpg italic";
+  const sectionClass = "bg-stone-900/60 border border-yellow-900/30 rounded-2xl p-8 space-y-6 shadow-xl relative overflow-hidden";
 
   return `
     <form method="POST" action="${action}" enctype="multipart/form-data" class="space-y-10 max-w-4xl">
@@ -156,21 +156,21 @@ function guideForm(title: string, data: GuideData | null, guideId: string | null
           <input name="subtitle" value="${esc(d.subtitle)}" placeholder="Un relato sobre valor y estrategia..." class="${fieldClass}" />
         </div>
 
-        <div class="bg-black/20 border border-yellow-900/5 rounded-2xl p-6 space-y-4">
-          <p class="text-[10px] font-bold text-stone-400 font-rpg uppercase tracking-widest mb-4">🖼️ Imagen del Desafío</p>
+        <div class="bg-black/30 border border-yellow-900/20 rounded-2xl p-6 space-y-4">
+          <p class="text-xs font-bold text-stone-300 font-rpg uppercase tracking-widest mb-4">🖼️ Imagen del Desafío</p>
           <div class="flex flex-col md:flex-row items-center gap-6">
             ${d.imageBase64 || d.imageUrl ? `
               <div class="relative group">
-                <img src="${esc(d.imageBase64 || d.imageUrl)}" class="w-32 h-32 rounded-full object-cover border-4 border-yellow-700/30 shadow-2xl transition group-hover:scale-105" />
-                <div class="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[10px] text-white font-rpg uppercase">Actual</div>
+                <img src="${esc(d.imageBase64 || d.imageUrl)}" class="w-32 h-32 rounded-full object-cover border-4 border-yellow-600/50 shadow-2xl transition group-hover:scale-105" />
+                <div class="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs text-white font-bold font-rpg uppercase">Actual</div>
               </div>` : `
-              <div class="w-32 h-32 rounded-full bg-stone-950 border-2 border-dashed border-stone-800 flex items-center justify-center text-stone-600 text-xs font-rpg uppercase text-center p-4">Sin Imagen</div>`}
+              <div class="w-32 h-32 rounded-full bg-stone-950 border-2 border-dashed border-stone-700 flex items-center justify-center text-stone-500 text-xs font-rpg uppercase text-center p-4">Sin Imagen</div>`}
             
             <div class="flex-1 space-y-4 w-full">
               <input name="imageUrl" value="${esc(d.imageUrl)}" placeholder="URL del Espejo (imgur, discord...)" class="${fieldClass}" />
               <div class="relative">
                 <input type="file" name="imageFile" accept="image/*" class="hidden" id="file-upload" />
-                <label for="file-upload" class="flex items-center justify-center gap-2 bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-stone-400 text-xs font-rpg uppercase tracking-widest cursor-pointer hover:border-yellow-600 transition">
+                <label for="file-upload" class="flex items-center justify-center gap-2 bg-stone-900 border border-yellow-700/50 rounded-xl px-4 py-3 text-yellow-500 font-bold text-sm font-rpg uppercase tracking-widest cursor-pointer hover:bg-stone-800 transition shadow-sm">
                   <span>📁 Subir Pergamino Visual</span>
                 </label>
               </div>
