@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout, esc } from "../views/layout.ts";
+import { cacheGetStale, cacheSet } from "../lib/cache.ts";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ export interface GuideData {
   steps: StepField[];
   drops: DropField[];
   tipBox: string;
+  published?: number;
 }
 
 // ─── Renderer visual ──────────────────────────────────────────────────────────
@@ -223,11 +225,21 @@ const guias = new Hono();
 
 guias.get("/", async (c) => {
   const db = getTursoClient();
-  const result = await db.execute(
-    `SELECT slug, title, author, created_at, content FROM guides WHERE published = 1 ORDER BY created_at DESC`
-  );
-  type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
-  const list = result.rows as unknown as GuideRow[];
+  
+  // Try cache first
+  const cached = cacheGetStale<any[]>("guias:list");
+  let list: any[] = cached || [];
+  
+  if (!list.length) {
+    const result = await db.execute(
+      `SELECT slug, title, author, created_at, content FROM guides WHERE published = 1 ORDER BY created_at DESC`
+    );
+    type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
+    list = result.rows as unknown as GuideRow[];
+    if (list.length) {
+      cacheSet("guias:list", list, 10 * 60 * 1000);
+    }
+  }
 
   const cards =
     list.length === 0

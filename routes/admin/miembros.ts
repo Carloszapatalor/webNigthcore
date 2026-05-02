@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
+import { cacheGetStale, cacheSet } from "../../lib/cache.ts";
 
 const IDLE_BASE = "https://query.idleclans.com";
 
@@ -25,22 +26,45 @@ miembros.get("/", async (c) => {
   const db = getTursoClient();
   const weekStart = getWeekStart();
 
-  const [rpgResult, membersDbResult, altersResult] = await Promise.allSettled([
-    db.execute({
-      sql: `SELECT d.username, SUM(d.total_exp) as week_exp,
-                   COALESCE(p.level, 1) as level,
-                   COALESCE(p.title, '🌱 Buscador') as title
-            FROM rpg_daily_exp d
-            LEFT JOIN rpg_players p ON p.username = d.username
-            WHERE d.date >= ?
-            GROUP BY d.username`,
-      args: [weekStart],
-    }),
-    db.execute(`SELECT member_name, rank, updated_at, hours_offline FROM clan_members ORDER BY rank DESC, member_name ASC`),
-    db.execute(`SELECT username, alter_name FROM member_alters`),
-  ]);
+  const cacheKey = "miembros:data";
+  const cacheTtl = 3 * 60 * 1000;
+  const cached = cacheGetStale<{ rpg: RpgRow[]; members: DbMember[]; alters: { username: string; alter_name: string }[]; lastSync: string }>(cacheKey);
+  
+  let rpgResult, membersDbResult, altersResult;
+
+  if (!cached) {
+    [rpgResult, membersDbResult, altersResult] = await Promise.allSettled([
+      db.execute({
+        sql: `SELECT d.username, SUM(d.total_exp) as week_exp,
+                     COALESCE(p.level, 1) as level,
+                     COALESCE(p.title, '🌱 Buscador') as title
+              FROM rpg_daily_exp d
+              LEFT JOIN rpg_players p ON p.username = d.username
+              WHERE d.date >= ?
+              GROUP BY d.username`,
+        args: [weekStart],
+      }),
+      db.execute(`SELECT member_name, rank, updated_at, hours_offline FROM clan_members ORDER BY rank DESC, member_name ASC`),
+      db.execute(`SELECT username, alter_name FROM member_alters`),
+    ]);
+
+    if (rpgResult.status === "fulfilled" && membersDbResult.status === "fulfilled" && altersResult.status === "fulfilled") {
+      const rpgRows = rpgResult.value.rows as unknown as RpgRow[];
+      const memberRows = membersDbResult.value.rows as unknown as DbMember[];
+      const alterRows = altersResult.value.rows as unknown as { username: string; alter_name: string }[];
+      const lastSync = memberRows.length > 0 ? memberRows[0].updated_at.slice(0, 10) : "";
+      
+      cacheSet(cacheKey, { rpg: rpgRows, members: memberRows, alters: alterRows, lastSync }, cacheTtl);
+    }
+  } else {
+    rpgResult = { status: "fulfilled" as const, value: { rows: cached.rpg } };
+    membersDbResult = { status: "fulfilled" as const, value: { rows: cached.members } };
+    altersResult = { status: "fulfilled" as const, value: { rows: cached.alters } };
+  }
 
   type RpgRow = { username: string; week_exp: number; level: number; title: string };
+  type DbMember = { member_name: string; rank: number; updated_at: string; hours_offline: number };
+  
   const rpgMap = new Map<string, RpgRow>();
   if (rpgResult.status === "fulfilled" && rpgResult.value) {
     for (const r of rpgResult.value.rows as unknown as RpgRow[]) {
@@ -48,12 +72,11 @@ miembros.get("/", async (c) => {
     }
   }
 
-  type DbMember = { member_name: string; rank: number; updated_at: string; hours_offline: number };
   let allMembers: DbMember[] = [];
-  let lastSync = "";
+  let lastSync = cached?.lastSync || "";
   if (membersDbResult.status === "fulfilled" && membersDbResult.value.rows.length > 0) {
     allMembers = membersDbResult.value.rows as unknown as DbMember[];
-    lastSync = allMembers[0].updated_at.slice(0, 10);
+    if (!cached) lastSync = allMembers[0].updated_at.slice(0, 10);
   }
 
   const alterMap = new Map<string, string>();

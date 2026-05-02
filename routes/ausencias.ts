@@ -1,13 +1,22 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout, esc } from "../views/layout.ts";
+import { cacheGetStale, cacheSet } from "../lib/cache.ts";
 
 const ausencias = new Hono();
 
 ausencias.get("/", async (c) => {
   const db = getTursoClient();
-  const membersResult = await db.execute(`SELECT member_name FROM clan_members ORDER BY member_name ASC`);
-  const members = membersResult.rows as any[];
+  
+  // Use cache first, then DB
+  let members = cacheGetStale<any[]>("miembros:list") || [];
+  if (!members.length) {
+    const membersResult = await db.execute(`SELECT member_name FROM clan_members ORDER BY member_name ASC`);
+    members = membersResult.rows as any[];
+    if (members.length) {
+      cacheSet("miembros:list", members, 5 * 60 * 1000);
+    }
+  }
 
   const content = `
     <div class="max-w-2xl mx-auto mt-12 px-4">

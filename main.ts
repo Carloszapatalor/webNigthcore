@@ -18,6 +18,7 @@ import adminAusenciasRoute from "./routes/admin/ausencias.ts";
 
 import { optionalAuth } from "./middleware/optionalAuth.ts";
 import { syncClanMembers } from "./lib/members.ts";
+import { warmHomeCache } from "./routes/home.ts";
 import jugadoresRoute from "./routes/jugadores.ts";
 
 const app = new Hono();
@@ -30,8 +31,9 @@ setInterval(() => {
   syncClanMembers();
 }, 30 * 60 * 1000);
 
-// Ejecutar una vez al inicio
-syncClanMembers();
+// Warm-up al inicio (esperar a que complete antes de servir)
+await syncClanMembers();
+await warmHomeCache();
 
 // Middleware global para estado de sesión
 app.use("*", optionalAuth);

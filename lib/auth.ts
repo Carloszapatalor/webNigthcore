@@ -21,7 +21,7 @@ export async function signToken(data: Omit<JwtPayload, "exp">): Promise<string> 
 
 export async function verifyToken(token: string): Promise<JwtPayload | null> {
   try {
-    return (await verify(token, getSecret(), "HS256")) as JwtPayload;
+    return (await verify(token, getSecret(), "HS256")) as unknown as JwtPayload;
   } catch {
     return null;
   }

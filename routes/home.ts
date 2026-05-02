@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout, esc } from "../views/layout.ts";
-import { fetchWithTimeout } from "../lib/cache.ts";
+import { fetchWithTimeout, cacheGetStale, cacheSet } from "../lib/cache.ts";
 
 function getWeekStart(): string {
   const d = new Date();
@@ -32,7 +32,7 @@ let cachedClanStats: Record<string, number> = {};
 let lastCacheUpdate = 0;
 let cacheUpdateInProgress = false;
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
-const API_TIMEOUT = 6000; // 6 segundos máximo por llamada a API externa
+const API_TIMEOUT = 4000; // 4 segundos máximo por llamada a API externa
 
 async function updateHomeCache() {
   if (cacheUpdateInProgress) return; // Evita llamadas concurrentes duplicadas
@@ -102,6 +102,61 @@ async function updateHomeCache() {
   cacheUpdateInProgress = false;
 }
 
+export async function warmHomeCache() {
+  if (cacheUpdateInProgress) return;
+  cacheUpdateInProgress = true;
+  const clanName = Deno.env.get("CLAN_NAME") || "Nightcore";
+  console.log("Warming home cache...");
+
+  try {
+    const today = getTodayUTC();
+    const ranking: Record<string, { combat: number; skilling: number; total: number }> = {};
+    const resLogs = await fetchWithTimeout(
+      `https://query.idleclans.com/api/Clan/logs/clan/${encodeURIComponent(clanName)}?skip=0&limit=100`,
+      API_TIMEOUT,
+    );
+    if (resLogs.ok) {
+      const logs = JSON.parse(await resLogs.text());
+      for (const log of logs as ClanLog[]) {
+        if (log.timestamp.slice(0, 10) !== today) continue;
+        const combatMatch = log.message.match(/^(.+?) completed a daily combat quest/);
+        const skillingMatch = log.message.match(/^(.+?) completed a skilling quest/);
+        if (combatMatch || skillingMatch) {
+          const user = combatMatch ? combatMatch[1] : skillingMatch![1];
+          if (!ranking[user]) ranking[user] = { combat: 0, skilling: 0, total: 0 };
+          if (combatMatch) ranking[user].combat++;
+          else ranking[user].skilling++;
+          ranking[user].total++;
+        }
+      }
+      cachedQuestsRanking = Object.entries(ranking)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 5);
+    }
+  } catch (e) {
+    console.error("Error warming quests:", (e as Error).message);
+  }
+
+  try {
+    const clanRes = await fetchWithTimeout(
+      `https://query.idleclans.com/api/Clan/recruitment/${encodeURIComponent(Deno.env.get("CLAN_NAME") || "Nightcore")}`,
+      API_TIMEOUT,
+    );
+    if (clanRes.ok) {
+      const clanData = JSON.parse(await clanRes.text());
+      if (clanData.serializedSkills) {
+        cachedClanStats = JSON.parse(clanData.serializedSkills);
+      }
+    }
+  } catch (e) {
+    console.error("Error warming clan stats:", (e as Error).message);
+  }
+
+  lastCacheUpdate = Date.now();
+  cacheUpdateInProgress = false;
+  console.log("Home cache warmed");
+}
+
 const home = new Hono();
 
 home.get("/", async (c) => {
@@ -109,7 +164,9 @@ home.get("/", async (c) => {
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
-  // Stale-while-revalidate: sirve siempre de caché y refresca en background
+  const staleQuests = cacheGetStale<[string, { combat: number; skilling: number; total: number }][]>("home:quests");
+  const staleClanStats = cacheGetStale<Record<string, number>>("home:clanStats");
+
   if (Date.now() - lastCacheUpdate > CACHE_TTL) {
     updateHomeCache().catch(e => console.error("Home cache update error:", e));
   }
@@ -147,8 +204,8 @@ home.get("/", async (c) => {
   type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
   const guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as unknown as GuideRow[]) : [];
 
-  const quests = cachedQuestsRanking;
-  const clanStats = cachedClanStats;
+  const quests = staleQuests || cachedQuestsRanking;
+  const clanStats = staleClanStats || cachedClanStats;
 
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
   const neonMedals = [

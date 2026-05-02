@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { publicLayout, esc } from "../views/layout.ts";
 import { optionalAuth } from "../middleware/optionalAuth.ts";
 import { getTursoClient } from "../lib/turso.ts";
+import { fetchWithTimeout, cacheGetStale, cacheSet } from "../lib/cache.ts";
 
 const jugadores = new Hono();
 
@@ -37,7 +38,10 @@ jugadores.get("/", async (c) => {
 
   if (query) {
     try {
-        const res = await fetch(`https://query.idleclans.com/api/Player/profile/${encodeURIComponent(query)}`);
+        const res = await fetchWithTimeout(
+          `https://query.idleclans.com/api/Player/profile/${encodeURIComponent(query)}`,
+          4000
+        );
         if (res.status === 404) {
           profileContent = `
             <div class="bg-stone-900/60 border border-red-900/20 rounded-2xl p-12 text-center shadow-xl">
@@ -123,17 +127,34 @@ jugadores.get("/", async (c) => {
           </div>`;
       }
     } catch (e) {
-      profileContent = `<p class="text-red-400">Error: ${esc((e as Error).message)}</p>`;
+      // API failed - show error message but still show member list as fallback
+      profileContent = `
+        <div class="bg-stone-900/60 border border-red-900/20 rounded-2xl p-8 text-center shadow-xl mb-8">
+          <span class="text-3xl mb-3 block">⚠️</span>
+          <h2 class="text-lg font-bold text-red-400 font-rpg uppercase">Error de conexión</h2>
+          <p class="text-stone-500 text-sm mt-2">No se pudo conectar con Idle Clans</p>
+        </div>`;
     }
   } else {
-    const members = await db.execute(`SELECT member_name FROM clan_members ORDER BY rank DESC, member_name ASC LIMIT 8`);
-    const memberChips = members.rows.map(m => `
+    // Always show members - use cache first, then DB
+    let members = cacheGetStale<any[]>("miembros:list") || [];
+    if (!members.length) {
+      const result = await db.execute(`SELECT member_name FROM clan_members ORDER BY rank DESC, member_name ASC LIMIT 50`);
+      members = result.rows as unknown as any[];
+      if (members.length) {
+        cacheSet("miembros:list", members, 5 * 60 * 1000);
+      }
+    }
+    
+    const memberChips = members.length > 0 
+      ? members.slice(0, 8).map(m => `
       <a href="/jugadores?nombre=${encodeURIComponent(String(m.member_name))}" 
          class="bg-[#11131A]/60 border border-white/5 rounded-[2rem] p-6 text-center hover:border-violet-500/30 transition-all group hover:-translate-y-2 duration-500 shadow-xl">
         <div class="w-14 h-14 bg-[#0B0D13] rounded-full mx-auto mb-4 flex items-center justify-center text-3xl group-hover:bg-violet-600/10 transition-all shadow-inner border border-white/5">👤</div>
         <p class="text-stone-300 text-[9px] font-rpg uppercase tracking-[0.3em] truncate font-bold">${esc(m.member_name)}</p>
       </a>
-    `).join("");
+    `).join("")
+      : `<div class="col-span-4 text-center text-stone-500 py-8">Miembros del clan cargando...</div>`;
 
     profileContent = `
       <div class="mt-12">

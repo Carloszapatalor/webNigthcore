@@ -15,7 +15,7 @@ export async function syncClanMembers() {
   try {
     const res = await fetchWithTimeout(
       `${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`,
-      8000,
+      5000,
     );
     if (!res.ok) {
       const text = await res.text();
@@ -50,7 +50,7 @@ export async function syncClanMembers() {
       try {
         const profileRes = await fetchWithTimeout(
           `${IDLE_BASE}/api/Player/profile/simple/${encodeURIComponent(m.memberName)}`,
-          5000,
+          3000,
         );
         if (!profileRes.ok) {
           memberData.push({ ...m, hoursOffline: -1 });

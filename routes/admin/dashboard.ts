@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
+import { cacheGetStale, cacheSet } from "../../lib/cache.ts";
 
 function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
@@ -13,29 +14,56 @@ dashboard.get("/", async (c) => {
   const db = getTursoClient();
   const today = getTodayUTC();
 
-  const [expResult, eventResult, wlResult, guidesResult, inactiveResult, reportsResult] = await Promise.allSettled([
-    db.execute({
-      sql: `SELECT COALESCE(SUM(total_exp), 0) as today_exp FROM rpg_daily_exp WHERE date = ?`,
-      args: [today],
-    }),
-    db.execute({
-      sql: `SELECT label FROM daily_events WHERE event_date = ?`,
-      args: [today],
-    }),
-    db.execute(`SELECT COUNT(*) as cnt FROM inactivity_whitelist`),
-    db.execute(
-      `SELECT title, slug, author, created_at, published FROM guides ORDER BY created_at DESC LIMIT 5`
-    ),
-    db.execute(`SELECT member_name, hours_offline FROM clan_members WHERE hours_offline >= 30 ORDER BY hours_offline DESC`),
-    db.execute(`SELECT username, reason, created_at FROM member_reports ORDER BY created_at DESC LIMIT 10`),
-  ]);
+  // Try cache first (3 min TTL)
+  const cachedData = cacheGetStale<{
+    todayExp: number; eventLabel: string; wlCount: number;
+    guides: any[]; inactiveList: any[]; reportsList: any[];
+  }>("admin:dashboard");
 
-  const todayExp = expResult.status === "fulfilled" ? ((expResult.value.rows[0] as any)?.today_exp ?? 0) : 0;
-  const eventLabel = eventResult.status === "fulfilled" && eventResult.value.rows.length > 0 ? (eventResult.value.rows[0] as any).label : "Sector Seguro";
-  const wlCount = wlResult.status === "fulfilled" ? (wlResult.value.rows[0] as any).cnt : "—";
-  const guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as any[]) : [];
-  const inactiveList = inactiveResult.status === "fulfilled" ? (inactiveResult.value.rows as any[]) : [];
-  const reportsList = reportsResult.status === "fulfilled" ? (reportsResult.value.rows as any[]) : [];
+  let todayExp = 0, eventLabel = "Sector Seguro", wlCount = 0;
+  let guides: any[] = [], inactiveList: any[] = [], reportsList: any[] = [];
+
+  if (cachedData) {
+    // Use cached data
+    todayExp = cachedData.todayExp;
+    eventLabel = cachedData.eventLabel;
+    wlCount = cachedData.wlCount;
+    guides = cachedData.guides;
+    inactiveList = cachedData.inactiveList;
+    reportsList = cachedData.reportsList;
+  } else {
+    // Fetch from DB and cache
+    const [expResult, eventResult, wlResult, guidesResult, inactiveResult, reportsResult] = await Promise.allSettled([
+      db.execute({
+        sql: `SELECT COALESCE(SUM(total_exp), 0) as today_exp FROM rpg_daily_exp WHERE date = ?`,
+        args: [today],
+      }),
+      db.execute({
+        sql: `SELECT label FROM daily_events WHERE event_date = ?`,
+        args: [today],
+      }),
+      db.execute(`SELECT COUNT(*) as cnt FROM inactivity_whitelist`),
+      db.execute(
+        `SELECT title, slug, author, created_at, published FROM guides ORDER BY created_at DESC LIMIT 5`
+      ),
+      db.execute(`SELECT member_name, hours_offline FROM clan_members WHERE hours_offline >= 30 ORDER BY hours_offline DESC`),
+      db.execute(`SELECT username, reason, created_at FROM member_reports ORDER BY created_at DESC LIMIT 10`),
+    ]);
+
+    todayExp = expResult.status === "fulfilled" ? ((expResult.value.rows[0] as any)?.today_exp ?? 0) : 0;
+    eventLabel = eventResult.status === "fulfilled" && eventResult.value.rows.length > 0 
+      ? (eventResult.value.rows[0] as any).label 
+      : "Sector Seguro";
+    wlCount = wlResult.status === "fulfilled" ? (wlResult.value.rows[0] as any).cnt : 0;
+    guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as any[]) : [];
+    inactiveList = inactiveResult.status === "fulfilled" ? (inactiveResult.value.rows as any[]) : [];
+    reportsList = reportsResult.status === "fulfilled" ? (reportsResult.value.rows as any[]) : [];
+
+    // Cache for future requests
+    cacheSet("admin:dashboard", {
+      todayExp, eventLabel, wlCount, guides, inactiveList, reportsList
+    }, 3 * 60 * 1000);
+  }
 
   const isHighRank = user.role === "superadmin" || user.role === "diputado";
 
