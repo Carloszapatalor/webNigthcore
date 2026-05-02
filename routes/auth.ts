@@ -10,31 +10,42 @@ const auth = new Hono();
 auth.get("/login", (c) => {
   const error = c.req.query("error");
   const content = `
-    <div class="max-w-sm mx-auto mt-16">
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-8">
-        <h2 class="text-2xl font-bold text-center mb-2">⚔️ Acceso Admin</h2>
-        <p class="text-gray-500 text-center text-sm mb-6">Clan Nightcore</p>
-        ${error ? `<div class="bg-red-900/30 border border-red-700 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">${esc(error)}</div>` : ""}
-        <form method="POST" action="/auth/login" class="flex flex-col gap-4">
+    <div class="max-w-md mx-auto mt-20 px-4">
+      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-10 shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">⚔️</div>
+        
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-bold font-rpg uppercase tracking-[0.3em] text-yellow-500 mb-2">Fortaleza</h2>
+          <p class="text-stone-500 font-rpg uppercase tracking-widest text-xs">Acceso al Consejo del Clan</p>
+        </div>
+
+        ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest text-center italic">⚠️ ${esc(error)}</div>` : ""}
+        
+        <form method="POST" action="/auth/login" class="flex flex-col gap-6">
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Usuario</label>
-            <input name="username" type="text" required autofocus
-              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none" />
+            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Identidad</label>
+            <input name="username" type="text" required autofocus placeholder="Nombre de guerrero"
+              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
           </div>
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Contraseña</label>
-            <input name="password" type="password" required
-              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none" />
+            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Secreto</label>
+            <input name="password" type="password" required placeholder="••••••••"
+              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
           </div>
+          
           <button type="submit"
-            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg transition">
-            Entrar
+            class="w-full bg-yellow-700 hover:bg-yellow-600 text-stone-950 font-bold font-rpg uppercase tracking-[0.2em] py-4 rounded-xl transition shadow-xl shadow-yellow-950/20 active:scale-95 mt-4">
+            Entrar al Castillo
           </button>
         </form>
+
+        <div class="mt-10 pt-6 border-t border-yellow-900/10 text-center">
+          <a href="/" class="text-stone-600 hover:text-stone-400 transition text-[10px] font-rpg uppercase tracking-widest">← Volver a las Tierras del Clan</a>
+        </div>
       </div>
     </div>
   `;
-  return c.html(publicLayout("Login", content));
+  return c.html(publicLayout("Identificación", content));
 });
 
 auth.post("/login", async (c) => {
@@ -91,34 +102,41 @@ auth.get("/change-password", async (c) => {
   const forced = payload.mcp === true;
 
   const content = `
-    <div class="max-w-sm mx-auto mt-16">
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-8">
-        <h2 class="text-2xl font-bold text-center mb-2">🔒 Cambiar contraseña</h2>
-        ${forced
-          ? `<p class="text-yellow-400 text-center text-sm mb-6">Debes establecer una nueva contraseña antes de continuar</p>`
-          : `<p class="text-gray-500 text-center text-sm mb-6">Hola, ${esc(payload.username)}</p>`
-        }
-        ${error ? `<div class="bg-red-900/30 border border-red-700 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">${esc(decodeURIComponent(error))}</div>` : ""}
-        <form method="POST" action="/auth/change-password" class="flex flex-col gap-4">
+    <div class="max-w-md mx-auto mt-20 px-4">
+      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-10 shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🔐</div>
+        
+        <div class="text-center mb-10">
+          <h2 class="text-3xl font-bold font-rpg uppercase tracking-[0.2em] text-yellow-500 mb-2">Cambiar Secreto</h2>
+          ${forced
+            ? `<p class="text-yellow-600 font-rpg uppercase tracking-widest text-[10px] italic">Como nuevo recluta, debes establecer tu propio secreto</p>`
+            : `<p class="text-stone-500 font-rpg uppercase tracking-widest text-xs">Hola, ${esc(payload.username)}</p>`
+          }
+        </div>
+
+        ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest text-center italic">⚠️ ${esc(decodeURIComponent(error))}</div>` : ""}
+        
+        <form method="POST" action="/auth/change-password" class="flex flex-col gap-6">
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Nueva contraseña</label>
-            <input name="password" type="password" required minlength="8" autofocus
-              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none" />
+            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Nuevo Secreto</label>
+            <input name="password" type="password" required minlength="8" autofocus placeholder="Mínimo 8 caracteres"
+              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
           </div>
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Confirmar contraseña</label>
-            <input name="confirm" type="password" required minlength="8"
-              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-purple-500 focus:outline-none" />
+            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Confirmar Secreto</label>
+            <input name="confirm" type="password" required minlength="8" placeholder="Repite tu secreto"
+              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
           </div>
+          
           <button type="submit"
-            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg transition">
-            Guardar contraseña
+            class="w-full bg-yellow-700 hover:bg-yellow-600 text-stone-950 font-bold font-rpg uppercase tracking-[0.2em] py-4 rounded-xl transition shadow-xl shadow-yellow-950/20 active:scale-95 mt-4">
+            Consagrar Secreto
           </button>
         </form>
       </div>
     </div>
   `;
-  return c.html(publicLayout("Cambiar contraseña", content));
+  return c.html(publicLayout("Cambiar secreto", content));
 });
 
 auth.post("/change-password", async (c) => {
