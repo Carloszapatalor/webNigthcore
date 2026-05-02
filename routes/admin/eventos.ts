@@ -71,22 +71,24 @@ eventos.get("/", async (c) => {
            <p class="text-2xl font-bold text-white font-rpg uppercase tracking-widest leading-relaxed">${event.label.split("—")[0].trim()}</p>
            <p class="text-[10px] text-stone-500 font-rpg uppercase mt-2 tracking-widest italic">Sorteado a las ${event.selected_at} UTC</p>
          </div>
+         ${user.role !== "escudero" ? `
          <form method="POST" action="/admin/eventos/sortear">
            <button type="submit"
              class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg active:scale-95 whitespace-nowrap"
              onclick="return confirm('¿Forzar nuevo sorteo?')">
              🎲 Nuevo sorteo
            </button>
-         </form>
+         </form>` : ""}
        </div>`
     : `<div class="flex flex-col md:flex-row items-center justify-between gap-6">
          <p class="text-stone-500 font-rpg uppercase tracking-widest text-xs italic">No hay un evento activo para hoy todavía...</p>
+         ${user.role !== "escudero" ? `
          <form method="POST" action="/admin/eventos/sortear">
            <button type="submit"
              class="bg-purple-700 hover:bg-purple-600 text-white text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg shadow-purple-950/20 active:scale-95">
              🎲 Lanzar Dados
            </button>
-         </form>
+         </form>` : ""}
        </div>`;
 
   const content = `
@@ -111,6 +113,8 @@ eventos.get("/", async (c) => {
 });
 
 eventos.post("/sortear", async (c) => {
+  const user = c.get("user");
+  if (user.role === "escudero") return c.redirect("/admin/eventos");
   const db = getTursoClient();
   const today = getTodayUTC();
 

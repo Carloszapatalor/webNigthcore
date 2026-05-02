@@ -20,6 +20,7 @@ const miembros = new Hono();
 
 miembros.get("/", async (c) => {
   const user = c.get("user");
+  if (user.role === "escudero") return c.redirect("/admin");
   const db = getTursoClient();
   const weekStart = getWeekStart();
 
@@ -71,8 +72,9 @@ miembros.get("/", async (c) => {
       ? `<tr><td colspan="7" class="py-8 text-center text-gray-500 text-sm">Sin miembros — pulsa <strong class="text-white">🔄 Actualizar</strong> para cargar desde la API</td></tr>`
       : memberList.map((m) => {
           const rpg = rpgMap.get(m.member_name.toLowerCase());
-          const offline = m.hours_offline;
-          const offlineText = (offline === null || offline < 0) ? "—" : `${Math.round(offline)}h`;
+          const offline = Number(m.hours_offline);
+          const isInvalid = isNaN(offline) || m.hours_offline === null || offline < 0;
+          const offlineText = isInvalid ? "—" : `${Math.round(offline)}h`;
           const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-gray-400";
           const rankLabel = RANK_LABELS[m.rank] ?? `Rango ${m.rank}`;
           const currentAlter = alterMap.get(m.member_name.toLowerCase()) ?? "";
@@ -98,7 +100,6 @@ miembros.get("/", async (c) => {
             : ""}
         </form>
       </td>
-      <td class="py-2.5 px-4 text-right font-mono text-xs ${offlineColor}">${offlineText}</td>
     </tr>`;
         }).join("");
 
@@ -135,7 +136,6 @@ miembros.get("/", async (c) => {
             <th class="py-3 px-4 text-center font-rpg tracking-widest">Nivel</th>
             <th class="py-3 px-4 text-right font-rpg tracking-widest">EXP Semanal</th>
             <th class="py-3 px-4 text-left font-rpg tracking-widest">Alter</th>
-            <th class="py-3 px-4 text-right font-rpg tracking-widest">Offline</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

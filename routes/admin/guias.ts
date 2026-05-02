@@ -295,7 +295,11 @@ const adminGuias = new Hono();
 adminGuias.get("/", async (c) => {
   const user = c.get("user");
   const db = getTursoClient();
-  const result = await db.execute(`SELECT id, title, published, author, created_at FROM guides ORDER BY created_at DESC`);
+  const sql = user.role === "escudero" 
+    ? `SELECT id, title, published, author, created_at FROM guides WHERE author = ? ORDER BY created_at DESC`
+    : `SELECT id, title, published, author, created_at FROM guides ORDER BY created_at DESC`;
+  const args = user.role === "escudero" ? [user.username] : [];
+  const result = await db.execute({ sql, args });
   type GuideRow = { id: string; title: string; published: number; author: string; created_at: string };
   const list = result.rows as unknown as GuideRow[];
 
@@ -319,9 +323,10 @@ adminGuias.get("/", async (c) => {
           <td class="py-4 px-6 text-right">
             <div class="flex justify-end gap-4">
               <a href="/admin/guias/${g.id}/editar" class="text-[10px] font-rpg font-bold uppercase tracking-widest text-yellow-600 hover:text-yellow-500 transition">Editar</a>
+              ${(user.role !== "escudero" || g.author === user.username) ? `
               <form method="POST" action="/admin/guias/${g.id}/borrar" class="inline" onsubmit="return confirm('¿Destruir este pergamino para siempre?')">
                 <button type="submit" class="text-[10px] font-rpg font-bold uppercase tracking-widest text-red-400 hover:text-red-300 transition">Borrar</button>
-              </form>
+              </form>` : ""}
             </div>
           </td>
         </tr>`).join("");
@@ -353,12 +358,18 @@ adminGuias.get("/", async (c) => {
 adminGuias.get("/nueva", (c) => c.html(adminLayout("Nuevo Pergamino", guideForm("", null, null), c.get("user"), "/admin/guias")));
 
 adminGuias.get("/:id/editar", async (c) => {
+  const user = c.get("user");
   const id = c.req.param("id");
   const db = getTursoClient();
-  const result = await db.execute({ sql: `SELECT id, title, content, published FROM guides WHERE id = ?`, args: [id] });
+  const result = await db.execute({ sql: `SELECT id, title, content, published, author FROM guides WHERE id = ?`, args: [id] });
   if (result.rows.length === 0) return c.notFound();
-  const g = result.rows[0] as unknown as { id: string; title: string; content: string; published: number };
-  return c.html(adminLayout("Editar Pergamino", guideForm(g.title, JSON.parse(g.content), g.id), c.get("user"), "/admin/guias"));
+  const g = result.rows[0] as unknown as { id: string; title: string; content: string; published: number; author: string };
+  
+  if (user.role === "escudero" && g.author !== user.username) {
+    return c.redirect("/admin/guias");
+  }
+  
+  return c.html(adminLayout("Editar Pergamino", guideForm(g.title, JSON.parse(g.content), g.id), user, "/admin/guias"));
 });
 
 adminGuias.get("/:id/preview", async (c) => {
@@ -386,8 +397,17 @@ adminGuias.post("/nueva", async (c) => {
 });
 
 adminGuias.post("/:id/editar", async (c) => {
+  const user = c.get("user");
   const id = c.req.param("id");
   const body = await c.req.parseBody();
+  
+  const db = getTursoClient();
+  const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
+  if (check.rows.length === 0) return c.notFound();
+  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
+    return c.redirect("/admin/guias");
+  }
+
   const title = String(body.title ?? "").trim();
   let imageBase64 = await extractImageBase64(body as Record<string, string | File>);
   if (!imageBase64) {
@@ -403,7 +423,15 @@ adminGuias.post("/:id/editar", async (c) => {
 });
 
 adminGuias.post("/:id/borrar", async (c) => {
-  await getTursoClient().execute({ sql: `DELETE FROM guides WHERE id = ?`, args: [c.req.param("id")] });
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const db = getTursoClient();
+  const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
+  if (check.rows.length === 0) return c.notFound();
+  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
+    return c.redirect("/admin/guias");
+  }
+  await db.execute({ sql: `DELETE FROM guides WHERE id = ?`, args: [id] });
   return c.redirect("/admin/guias?ok=1");
 });
 

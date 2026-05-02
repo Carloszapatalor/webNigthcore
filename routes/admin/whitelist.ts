@@ -6,6 +6,7 @@ const whitelist = new Hono();
 
 whitelist.get("/", async (c) => {
   const user = c.get("user");
+  if (user.role === "escudero") return c.redirect("/admin");
   const db = getTursoClient();
   const result = await db.execute(
     `SELECT username, reason, added_at FROM inactivity_whitelist ORDER BY added_at DESC`

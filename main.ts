@@ -12,6 +12,7 @@ import eventosRoute from "./routes/admin/eventos.ts";
 import adminGuiasRoute from "./routes/admin/guias.ts";
 import usuariosRoute from "./routes/admin/usuarios.ts";
 import altersRoute from "./routes/admin/alters.ts";
+import reportesRoute from "./routes/admin/reportes.ts";
 
 import { optionalAuth } from "./middleware/optionalAuth.ts";
 import { syncClanMembers } from "./lib/members.ts";
@@ -52,6 +53,7 @@ admin.route("/eventos", eventosRoute);
 admin.route("/guias", adminGuiasRoute);
 admin.route("/usuarios", usuariosRoute);
 admin.route("/alters", altersRoute);
+admin.route("/reportes", reportesRoute);
 
 app.route("/admin", admin);
 

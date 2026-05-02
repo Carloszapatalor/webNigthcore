@@ -13,6 +13,44 @@ function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+interface ClanLog {
+  memberUsername: string;
+  message: string;
+  timestamp: string;
+}
+
+async function fetchClanQuestsRanking(clanName: string) {
+  const today = getTodayUTC();
+  const ranking: Record<string, { combat: number; skilling: number; total: number }> = {};
+  
+  try {
+    const res = await fetch(`https://query.idleclans.com/api/Clan/logs/clan/${encodeURIComponent(clanName)}?skip=0&limit=100`);
+    const logs: ClanLog[] = await res.json();
+    
+    for (const log of logs) {
+      if (log.timestamp.slice(0, 10) !== today) continue;
+      
+      const combatMatch = log.message.match(/^(.+?) completed a daily combat quest/);
+      const skillingMatch = log.message.match(/^(.+?) completed a skilling quest/);
+      
+      if (combatMatch || skillingMatch) {
+        const user = combatMatch ? combatMatch[1] : skillingMatch![1];
+        if (!ranking[user]) ranking[user] = { combat: 0, skilling: 0, total: 0 };
+        
+        if (combatMatch) ranking[user].combat++;
+        else ranking[user].skilling++;
+        ranking[user].total++;
+      }
+    }
+  } catch (e) {
+    console.error("Error fetching quests ranking:", (e as Error).message);
+  }
+  
+  return Object.entries(ranking)
+    .sort((a, b) => b[1].total - a[1].total)
+    .slice(0, 5);
+}
+
 const home = new Hono();
 
 home.get("/", async (c) => {
@@ -20,7 +58,9 @@ home.get("/", async (c) => {
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
-  const [rankingResult, eventResult, membersResult, onlineResult, guidesResult] = await Promise.allSettled([
+  const clanName = Deno.env.get("CLAN_NAME") || "Nightcore";
+
+  const [rankingResult, eventResult, membersResult, onlineResult, guidesResult, questsRanking] = await Promise.allSettled([
     db.execute({
       sql: `SELECT d.username, SUM(d.total_exp) as week_exp,
                    COALESCE(p.title, '🌱 Buscador') as title,
@@ -39,7 +79,8 @@ home.get("/", async (c) => {
     }),
     db.execute(`SELECT COUNT(*) as cnt FROM clan_members`),
     db.execute(`SELECT member_name FROM clan_members WHERE hours_offline = 0 ORDER BY member_name ASC`),
-    db.execute(`SELECT slug, title, author, created_at, content FROM guides WHERE published = 1 ORDER BY created_at DESC LIMIT 6`)
+    db.execute(`SELECT slug, title, author, created_at, content FROM guides WHERE published = 1 ORDER BY created_at DESC LIMIT 6`),
+    fetchClanQuestsRanking(clanName)
   ]);
 
   // Fetch real-time clan strengths
@@ -64,6 +105,8 @@ home.get("/", async (c) => {
   
   type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
   const guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as unknown as GuideRow[]) : [];
+
+  const quests = questsRanking.status === "fulfilled" ? questsRanking.value : [];
 
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
 
@@ -214,21 +257,40 @@ home.get("/", async (c) => {
         </div>
       </div>
 
-      <!-- Stats Col 3 (Strengths & Hero) -->
+      <!-- Stats Col 3 (Strengths & Quests) -->
       <div class="lg:col-span-1 space-y-6">
         <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-          <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition-transform duration-700">⭐</div>
-          <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-widest mb-1">Héroe del Clan</p>
-          ${ranking[0]
-            ? `<p class="text-xl font-bold text-yellow-500 font-rpg uppercase">${esc(ranking[0].username)}</p>
-               <p class="text-[10px] text-purple-400 font-rpg uppercase tracking-widest mt-1">${esc(ranking[0].title)}</p>
-               <div class="mt-4 flex items-center gap-2">
-                 <div class="flex-1 h-1 bg-stone-800 rounded-full overflow-hidden">
-                   <div class="h-full bg-yellow-600" style="width: 100%"></div>
-                 </div>
-               </div>`
-            : `<p class="text-stone-600 text-xs italic mt-1">Buscando un héroe...</p>`
-          }
+          <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition-transform duration-700">📜</div>
+          <p class="text-stone-400 text-xs uppercase font-rpg tracking-widest mb-4 border-b border-yellow-900/10 pb-2">📜 Misiones Completadas</p>
+          <p class="text-stone-500 text-[11px] mb-4 font-rpg uppercase italic tracking-wider">Resumen de actividad del clan</p>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-red-400 text-xs font-bold font-rpg uppercase mb-3 flex items-center gap-1.5">
+                <span>⚔️</span> Combate
+              </p>
+              <div class="space-y-2">
+                ${quests.filter(([_, d]) => d.combat > 0).sort((a, b) => b[1].combat - a[1].combat).slice(0, 3).map(([user, data]) => `
+                  <div class="flex flex-col">
+                    <span class="text-stone-200 font-bold text-xs truncate">${esc(user)}: <span class="text-stone-400 font-mono">${data.combat}</span></span>
+                  </div>
+                `).join("") || `<p class="text-stone-600 text-[10px] italic">Sin actividad</p>`}
+              </div>
+            </div>
+            <div>
+              <p class="text-green-400 text-xs font-bold font-rpg uppercase mb-3 flex items-center gap-1.5">
+                <span>🛠️</span> Habilidad
+              </p>
+              <div class="space-y-2">
+                ${quests.filter(([_, d]) => d.skilling > 0).sort((a, b) => b[1].skilling - a[1].skilling).slice(0, 3).map(([user, data]) => `
+                  <div class="flex flex-col">
+                    <span class="text-stone-200 font-bold text-xs truncate">${esc(user)}: <span class="text-stone-400 font-mono">${data.skilling}</span></span>
+                  </div>
+                `).join("") || `<p class="text-stone-600 text-[10px] italic">Sin actividad</p>`}
+              </div>
+            </div>
+          </div>
+          <p class="text-[10px] text-stone-600 mt-6 uppercase tracking-widest italic">Actualizado en tiempo real</p>
         </div>
 
         <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">

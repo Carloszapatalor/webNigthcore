@@ -3,13 +3,13 @@ import { getTursoClient } from "../../lib/turso.ts";
 import { hashPassword } from "../../lib/hash.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
 
-const VALID_ROLES = ["superadmin", "admin", "diputado"] as const;
+const VALID_ROLES = ["superadmin", "diputado", "escudero"] as const;
 
 const usuarios = new Hono();
 
 usuarios.get("/", async (c) => {
   const user = c.get("user");
-  if (user.role === "diputado") return c.redirect("/admin");
+  if (user.role !== "superadmin") return c.redirect("/admin");
 
   const db = getTursoClient();
   const result = await db.execute(
@@ -57,9 +57,17 @@ usuarios.get("/", async (c) => {
         </div>
       </td>
       <td class="py-4 px-6">
-        <span class="inline-block text-[9px] font-bold px-2 py-0.5 rounded border font-rpg uppercase tracking-widest ${roleBadge[u.role] ?? "border-stone-700 text-stone-500"}">
-          ${esc(u.role)}
-        </span>
+        ${isSelf ? `
+          <span class="inline-block text-[9px] font-bold px-2 py-0.5 rounded border border-yellow-900/30 text-yellow-500 font-rpg uppercase tracking-widest ${roleBadge[u.role]}">
+            ${esc(u.role)}
+          </span>` : `
+          <form method="POST" action="/admin/usuarios/${u.id}/rol" class="flex items-center gap-2">
+            <select name="role" onchange="this.form.submit()"
+              class="bg-stone-950 border border-yellow-900/10 rounded px-2 py-1 text-[9px] text-stone-400 focus:border-yellow-600 focus:outline-none font-rpg uppercase cursor-pointer">
+              ${VALID_ROLES.map(r => `<option value="${r}" ${u.role === r ? "selected" : ""}>${r}</option>`).join("")}
+            </select>
+          </form>
+        `}
       </td>
       <td class="py-4 px-6 text-stone-600 font-mono text-[10px]">${u.created_at.slice(0, 10)}</td>
       <td class="py-4 px-6">${resetCell}</td>
@@ -81,7 +89,7 @@ usuarios.get("/", async (c) => {
 
     <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 mb-10 shadow-xl relative overflow-hidden">
       <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">👥</div>
-      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6 border-b border-yellow-900/10 pb-4">👥 Reclutar Administrador</h2>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6 border-b border-yellow-900/10 pb-4">👥 Reclutar al Consejo</h2>
       <form method="POST" action="/admin/usuarios/crear" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input name="username" type="text" placeholder="Usuario" required
           class="bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
@@ -89,9 +97,9 @@ usuarios.get("/", async (c) => {
           class="bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
         <select name="role"
           class="bg-stone-950 border border-yellow-900/10 rounded-xl px-3 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest">
+          <option value="escudero">Escudero</option>
           <option value="diputado">Diputado</option>
-          <option value="admin">Admin</option>
-          ${user.role === "superadmin" ? `<option value="superadmin">Superadmin</option>` : ""}
+          <option value="superadmin">Superadmin</option>
         </select>
         <button type="submit"
           class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-xl active:scale-95">
@@ -126,13 +134,12 @@ usuarios.get("/", async (c) => {
 
 usuarios.post("/crear", async (c) => {
   const user = c.get("user");
-  if (user.role === "diputado") return c.redirect("/admin");
+  if (user.role !== "superadmin") return c.redirect("/admin");
   const body = await c.req.parseBody();
   const username = String(body.username ?? "").trim();
   const password = String(body.password ?? "");
   const roleInput = String(body.role ?? "");
-  const allowedRoles = user.role === "superadmin" ? VALID_ROLES : (["admin", "diputado"] as const);
-  const role = (allowedRoles as readonly string[]).includes(roleInput) ? roleInput : "admin";
+  const role = (VALID_ROLES as readonly string[]).includes(roleInput) ? roleInput : "escudero";
   if (!username || password.length < 8) return c.redirect("/admin/usuarios?error=Datos+inv%C3%A1lidos");
   const db = getTursoClient();
   const hash = await hashPassword(password);
@@ -145,7 +152,7 @@ usuarios.post("/crear", async (c) => {
 
 usuarios.post("/:id/resetear", async (c) => {
   const user = c.get("user");
-  if (user.role === "diputado") return c.redirect("/admin");
+  if (user.role !== "superadmin") return c.redirect("/admin");
   const id = c.req.param("id");
   const body = await c.req.parseBody();
   const newPassword = String(body.password ?? "").trim();
@@ -161,10 +168,28 @@ usuarios.post("/:id/resetear", async (c) => {
 
 usuarios.post("/:id/borrar", async (c) => {
   const user = c.get("user");
-  if (user.role === "diputado") return c.redirect("/admin");
+  if (user.role !== "superadmin") return c.redirect("/admin");
   const id = c.req.param("id");
   if (id === user.sub) return c.redirect("/admin/usuarios?error=Auto-expulsi%C3%B3n+no+permitida");
   await getTursoClient().execute({ sql: `DELETE FROM admin_users WHERE id = ?`, args: [id] });
+  return c.redirect("/admin/usuarios?ok=1");
+});
+
+usuarios.post("/:id/rol", async (c) => {
+  const user = c.get("user");
+  if (user.role !== "superadmin") return c.redirect("/admin");
+  const id = c.req.param("id");
+  if (id === user.sub) return c.redirect("/admin/usuarios?error=No+puedes+cambiar+tu+propio+rango");
+  
+  const body = await c.req.parseBody();
+  const newRole = String(body.role ?? "");
+  if (!(VALID_ROLES as readonly string[]).includes(newRole)) return c.redirect("/admin/usuarios?error=Rango+inv%C3%A1lido");
+
+  await getTursoClient().execute({
+    sql: `UPDATE admin_users SET role = ? WHERE id = ?`,
+    args: [newRole, id],
+  });
+
   return c.redirect("/admin/usuarios?ok=1");
 });
 

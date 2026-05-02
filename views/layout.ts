@@ -38,10 +38,10 @@ export function publicLayout(title: string, content: string, user?: User | null)
       h1, h2, h3, .font-rpg { font-family: 'Cinzel', serif; }
       body { font-family: 'Merriweather', serif; }
     }
-    .prose h1 { @apply text-2xl font-bold text-stone-100 mt-6 mb-3 font-rpg tracking-wider uppercase; }
-    .prose h2 { @apply text-xl font-bold text-stone-200 mt-5 mb-2 font-rpg tracking-wider uppercase; }
-    .prose h3 { @apply text-lg font-semibold text-stone-300 mt-4 mb-2 font-rpg tracking-wider; }
-    .prose p  { @apply text-stone-300 mb-3 leading-relaxed; }
+    .prose h1 { @apply text-3xl font-bold text-stone-100 mt-8 mb-4 font-rpg tracking-wider uppercase; }
+    .prose h2 { @apply text-2xl font-bold text-stone-200 mt-6 mb-3 font-rpg tracking-wider uppercase; }
+    .prose h3 { @apply text-xl font-semibold text-stone-300 mt-5 mb-2 font-rpg tracking-wider; }
+    .prose p  { @apply text-stone-300 mb-4 leading-relaxed text-base; }
     .prose ul { @apply list-disc list-inside text-stone-300 mb-3 space-y-1; }
     .prose ol { @apply list-decimal list-inside text-stone-300 mb-3 space-y-1; }
     .prose code { @apply bg-stone-900 text-yellow-500 px-1.5 py-0.5 rounded border border-yellow-900/30 text-sm font-mono; }
@@ -77,14 +77,22 @@ export function publicLayout(title: string, content: string, user?: User | null)
 export function adminLayout(title: string, content: string, user: User, currentPath?: string): string {
   const navItems = [
     { href: "/admin", label: "Dashboard", icon: "📊" },
-    { href: "/admin/miembros", label: "Miembros", icon: "👥" },
-    { href: "/admin/whitelist", label: "Whitelist", icon: "🛡️" },
-    { href: "/admin/eventos", label: "Eventos", icon: "🎯" },
-    { href: "/admin/guias", label: "Guías", icon: "📖" },
-    { href: "/admin/alters", label: "Alters", icon: "🔀" },
   ];
 
-  if (user.role === "superadmin" || user.role === "admin") {
+  if (user.role !== "escudero") {
+    navItems.push({ href: "/admin/miembros", label: "Miembros", icon: "👥" });
+    navItems.push({ href: "/admin/whitelist", label: "Whitelist", icon: "🛡️" });
+    navItems.push({ href: "/admin/reportes", label: "Reportes", icon: "📢" });
+  }
+
+  navItems.push({ href: "/admin/eventos", label: "Eventos", icon: "🎯" });
+  navItems.push({ href: "/admin/guias", label: "Guías", icon: "📖" });
+
+  if (user.role !== "escudero") {
+    navItems.push({ href: "/admin/alters", label: "Alters", icon: "🔀" });
+  }
+
+  if (user.role === "superadmin") {
     navItems.push({ href: "/admin/usuarios", label: "Usuarios", icon: "🔑" });
   }
 
@@ -104,8 +112,8 @@ export function adminLayout(title: string, content: string, user: User, currentP
 
   const roleColors: Record<string, string> = {
     superadmin: "text-purple-400",
-    admin: "text-blue-400",
     diputado: "text-cyan-400",
+    escudero: "text-amber-600",
   };
   const roleColor = roleColors[user.role] ?? "text-stone-400";
 
@@ -140,9 +148,9 @@ export function adminLayout(title: string, content: string, user: User, currentP
       </a>
       ${nav}
     </nav>
-    <div class="p-4 border-t border-yellow-900/20 bg-black/30">
-      <p class="text-xs text-stone-300 mb-0.5 px-3 font-bold font-rpg uppercase tracking-wider">${esc(user.username)}</p>
-      <p class="text-[10px] ${roleColor} mb-3 px-3 font-rpg uppercase tracking-widest">${esc(user.role)}</p>
+    <div class="p-6 border-t border-yellow-900/20 bg-black/30">
+      <p class="text-sm text-stone-300 mb-1 px-3 font-bold font-rpg uppercase tracking-wider">${esc(user.username)}</p>
+      <p class="text-xs ${roleColor} mb-4 px-3 font-rpg uppercase tracking-widest font-bold">${esc(user.role)}</p>
       <a href="/auth/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg text-stone-500 hover:text-red-400 hover:bg-stone-800 transition text-xs font-rpg uppercase tracking-widest">
         <span>🚪</span><span>Cerrar sesión</span>
       </a>

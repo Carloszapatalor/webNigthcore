@@ -15,6 +15,7 @@ const alters = new Hono();
 
 alters.get("/", async (c) => {
   const user = c.get("user");
+  if (user.role === "escudero") return c.redirect("/admin");
   const db = getTursoClient();
   const weekStart = getWeekStart();
 
@@ -72,8 +73,9 @@ alters.get("/", async (c) => {
       ? `<tr><td colspan="7" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">No hay alters registrados aún</td></tr>`
       : alterList.map((m) => {
           const rpg = rpgMap.get(m.memberName.toLowerCase());
-          const offline = m.hoursOffline;
-          const offlineText = (offline === null || offline < 0) ? "—" : `${Math.round(offline)}h`;
+          const offline = Number(m.hoursOffline);
+          const isInvalid = isNaN(offline) || m.hoursOffline === null || offline < 0;
+          const offlineText = isInvalid ? "—" : `${Math.round(offline)}h`;
           const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-stone-400";
           const rankLabel = RANK_LABELS[m.rank] ?? `Rango ${m.rank}`;
 
@@ -85,7 +87,6 @@ alters.get("/", async (c) => {
       <td class="py-4 px-6 text-purple-400 font-rpg text-[10px] uppercase tracking-widest">${rpg ? rpg.title : "—"}</td>
       <td class="py-4 px-6 text-center text-stone-300 font-rpg">${rpg ? rpg.level : "—"}</td>
       <td class="py-4 px-6 text-right font-mono text-cyan-400 text-xs">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
-      <td class="py-4 px-6 text-right font-mono text-xs ${offlineColor}">${offlineText}</td>
     </tr>`;
         }).join("");
 
@@ -104,7 +105,6 @@ alters.get("/", async (c) => {
             <th class="py-4 px-6 text-left font-rpg tracking-widest">Título RPG</th>
             <th class="py-4 px-6 text-center font-rpg tracking-widest">Nivel</th>
             <th class="py-4 px-6 text-right font-rpg tracking-widest">EXP Semanal</th>
-            <th class="py-4 px-6 text-right font-rpg tracking-widest">Offline</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
