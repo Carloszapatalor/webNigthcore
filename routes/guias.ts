@@ -83,12 +83,12 @@ export function renderGuide(title: string, data: GuideData, author: string, date
 
   const dropsGrid = (data.drops ?? []).map(d => `
     <div class="bg-black/20 border ${d.rare ? 'border-orange-500/30 bg-orange-500/5' : 'border-white/5'} rounded-2xl p-5 flex items-center gap-5 hover:scale-105 transition-transform">
-      <div class="text-4xl drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${esc(d.icon || "📦")}</div>
-      <div class="min-w-0">
-        <div class="text-sm font-bold text-white font-rpg tracking-wider uppercase truncate">${esc(d.name)}</div>
-        <div class="text-[10px] text-stone-500 font-mono mt-1">${esc(d.rate || "Unknown")}</div>
+      <div class="text-4xl flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${esc(d.icon || "📦")}</div>
+      <div class="min-w-0 flex-1">
+        <div class="text-sm font-bold text-white font-rpg tracking-wider uppercase break-words leading-snug">${esc(d.name)}</div>
+        <div class="text-[10px] text-stone-500 font-mono mt-1 break-all">${esc(d.rate || "Unknown")}</div>
       </div>
-      ${d.rare ? `<div class="ml-auto text-[8px] font-rpg font-bold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-2 py-1 rounded">ÉPICO</div>` : ""}
+      ${d.rare ? `<div class="flex-shrink-0 text-[8px] font-rpg font-bold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-2 py-1 rounded">ÉPICO</div>` : ""}
     </div>`).join("");
 
   return `
@@ -176,16 +176,6 @@ export function renderGuide(title: string, data: GuideData, author: string, date
           </div>
         </div>
 
-        <!-- TIP BOX -->
-        ${data.tipBox ? `
-        <div class="bg-green-500/5 border border-green-500/20 rounded-3xl p-8 relative overflow-hidden">
-          <div class="absolute left-0 top-0 w-1.5 h-full bg-green-500"></div>
-          <h3 class="text-xs font-rpg font-bold text-green-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
-             <span>🧠</span> El Consejo Final
-          </h3>
-          <p class="text-stone-300 text-sm leading-relaxed font-subtitle italic">${esc(data.tipBox)}</p>
-        </div>` : ""}
-
         <!-- META -->
         <div class="bg-[#11131A]/60 border border-white/5 rounded-3xl p-8 text-center space-y-4">
           <div class="w-16 h-16 rounded-full bg-stone-800 border border-white/10 flex items-center justify-center text-stone-400 text-2xl font-bold font-rpg mx-auto">
@@ -204,7 +194,24 @@ export function renderGuide(title: string, data: GuideData, author: string, date
       </div>
     </div>
 
-    <div class="mt-20 py-10 border-t border-white/5 text-center">
+    <!-- CONSEJO FINAL (ancho completo, al pie del post) -->
+    ${data.tipBox ? `
+    <div class="mt-12 bg-green-500/5 border border-green-500/20 rounded-3xl p-10 relative overflow-hidden">
+      <div class="absolute left-0 top-0 w-1.5 h-full bg-green-500 rounded-l-3xl"></div>
+      <div class="flex flex-col md:flex-row items-start gap-8">
+        <div class="flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-2xl bg-green-500/10 border border-green-500/20 text-3xl">
+          🧠
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-xs font-rpg font-bold text-green-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+            El Consejo Final
+          </h3>
+          <p class="text-stone-300 text-base leading-relaxed font-subtitle italic break-words">${esc(data.tipBox)}</p>
+        </div>
+      </div>
+    </div>` : ""}
+
+    <div class="mt-16 py-10 border-t border-white/5 text-center">
       <p class="text-[9px] font-rpg tracking-[0.5em] text-stone-700 uppercase">✦ Sabiduría del Clan Nightcore ✦</p>
     </div>
   `;
