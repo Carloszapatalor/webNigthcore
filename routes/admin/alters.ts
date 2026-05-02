@@ -2,17 +2,12 @@ import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
 
-const IDLE_BASE = "https://query.idleclans.com";
-
 function getWeekStart(): string {
   const d = new Date();
   const day = d.getUTCDay();
   d.setUTCDate(d.getUTCDate() - (day === 0 ? 6 : day - 1));
   return d.toISOString().slice(0, 10);
 }
-
-interface CachedMember { member_name: string; rank: number }
-interface SimpleProfile { hoursOffline: number }
 
 const RANK_LABELS: Record<number, string> = { 0: "Miembro", 1: "Diputado", 2: "Líder" };
 
@@ -34,7 +29,7 @@ alters.get("/", async (c) => {
             GROUP BY d.username`,
       args: [weekStart],
     }),
-    db.execute(`SELECT member_name, rank FROM clan_members`),
+    db.execute(`SELECT member_name, rank, hours_offline FROM clan_members`),
     db.execute(`SELECT username, alter_name FROM member_alters`),
   ]);
 
@@ -46,10 +41,11 @@ alters.get("/", async (c) => {
     }
   }
 
-  const memberRankMap = new Map<string, number>();
+  type DbMember = { member_name: string; rank: number; hours_offline: number };
+  const memberDataMap = new Map<string, DbMember>();
   if (membersDbResult.status === "fulfilled") {
-    for (const r of membersDbResult.value.rows as unknown as CachedMember[]) {
-      memberRankMap.set(r.member_name.toLowerCase(), r.rank);
+    for (const r of membersDbResult.value.rows as unknown as DbMember[]) {
+      memberDataMap.set(r.member_name.toLowerCase(), r);
     }
   }
 
@@ -61,59 +57,54 @@ alters.get("/", async (c) => {
     }
   }
 
-  // Solo los miembros cacheados que son alter de alguien
-  const alterList = [...reverseMap.entries()].map(([alterLower, mainUsername]) => ({
-    memberName: [...memberRankMap.keys()].find((k) => k === alterLower) ?? alterLower,
-    rank: memberRankMap.get(alterLower) ?? 0,
-    mainUsername,
-  }));
-
-  const profiles = await Promise.all(
-    alterList.map((m) =>
-      fetch(`${IDLE_BASE}/api/Player/profile/simple/${encodeURIComponent(m.memberName)}`)
-        .then((r) => r.json() as Promise<SimpleProfile>)
-        .catch(() => ({ hoursOffline: -1 }))
-    )
-  );
+  const alterList = [...reverseMap.entries()].map(([alterLower, mainUsername]) => {
+    const data = memberDataMap.get(alterLower);
+    return {
+      memberName: data?.member_name ?? alterLower,
+      rank: data?.rank ?? 0,
+      hoursOffline: data?.hours_offline ?? -1,
+      mainUsername,
+    };
+  });
 
   const rows =
     alterList.length === 0
-      ? `<tr><td colspan="7" class="py-8 text-center text-gray-600 text-sm">No hay alters registrados aún</td></tr>`
-      : alterList.map((m, i) => {
+      ? `<tr><td colspan="7" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">No hay alters registrados aún</td></tr>`
+      : alterList.map((m) => {
           const rpg = rpgMap.get(m.memberName.toLowerCase());
-          const offline = profiles[i].hoursOffline;
-          const offlineText = offline < 0 ? "—" : `${Math.round(offline)}h`;
-          const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-gray-400";
+          const offline = m.hoursOffline;
+          const offlineText = (offline === null || offline < 0) ? "—" : `${Math.round(offline)}h`;
+          const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-stone-400";
           const rankLabel = RANK_LABELS[m.rank] ?? `Rango ${m.rank}`;
 
           return `
-    <tr class="border-b border-gray-800 hover:bg-gray-800/40 transition text-sm">
-      <td class="py-2.5 px-4 font-medium">${esc(m.memberName)}</td>
-      <td class="py-2.5 px-4 text-yellow-400 text-xs font-medium">← ${esc(m.mainUsername)}</td>
-      <td class="py-2.5 px-4 text-gray-400">${esc(rankLabel)}</td>
-      <td class="py-2.5 px-4 text-purple-400">${rpg ? rpg.title : "—"}</td>
-      <td class="py-2.5 px-4 text-center text-gray-300">${rpg ? rpg.level : "—"}</td>
-      <td class="py-2.5 px-4 text-right font-mono text-cyan-400">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
-      <td class="py-2.5 px-4 text-right ${offlineColor}">${offlineText}</td>
+    <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
+      <td class="py-4 px-6 font-bold text-stone-200">${esc(m.memberName)}</td>
+      <td class="py-4 px-6 text-yellow-600 font-rpg text-[10px] uppercase tracking-widest italic">← ${esc(m.mainUsername)}</td>
+      <td class="py-4 px-6 text-stone-500 font-rpg text-[10px] uppercase tracking-widest">${esc(rankLabel)}</td>
+      <td class="py-4 px-6 text-purple-400 font-rpg text-[10px] uppercase tracking-widest">${rpg ? rpg.title : "—"}</td>
+      <td class="py-4 px-6 text-center text-stone-300 font-rpg">${rpg ? rpg.level : "—"}</td>
+      <td class="py-4 px-6 text-right font-mono text-cyan-400 text-xs">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
+      <td class="py-4 px-6 text-right font-mono text-xs ${offlineColor}">${offlineText}</td>
     </tr>`;
         }).join("");
 
   const content = `
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h2 class="font-semibold">Alters del clan</h2>
-        <span class="text-xs text-gray-500">${alterList.length} alters · semana desde ${weekStart}</span>
+    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
+      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
+        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">👥 Alters del Clan</h2>
+        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">${alterList.length} alters detectados</span>
       </div>
       <table class="w-full">
         <thead>
-          <tr class="text-xs text-gray-500 uppercase border-b border-gray-800">
-            <th class="py-3 px-4 text-left">Alter</th>
-            <th class="py-3 px-4 text-left">Cuenta principal</th>
-            <th class="py-3 px-4 text-left">Rango</th>
-            <th class="py-3 px-4 text-left">Título RPG</th>
-            <th class="py-3 px-4 text-center">Nivel</th>
-            <th class="py-3 px-4 text-right">EXP Semanal</th>
-            <th class="py-3 px-4 text-right">Offline</th>
+          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Alter</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Cuenta Principal</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Rango</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Título RPG</th>
+            <th class="py-4 px-6 text-center font-rpg tracking-widest">Nivel</th>
+            <th class="py-4 px-6 text-right font-rpg tracking-widest">EXP Semanal</th>
+            <th class="py-4 px-6 text-right font-rpg tracking-widest">Offline</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

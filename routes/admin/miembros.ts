@@ -46,13 +46,12 @@ miembros.get("/", async (c) => {
     }
   }
 
-  type DbMember = { member_name: string; rank: number; updated_at: string };
-  let allMembers: RecruitmentMember[] = [];
+  type DbMember = { member_name: string; rank: number; updated_at: string; hours_offline: number };
+  let allMembers: DbMember[] = [];
   let lastSync = "";
   if (membersDbResult.status === "fulfilled" && membersDbResult.value.rows.length > 0) {
-    const rows = membersDbResult.value.rows as unknown as DbMember[];
-    allMembers = rows.map((r) => ({ memberName: r.member_name, rank: r.rank }));
-    lastSync = rows[0].updated_at.slice(0, 10);
+    allMembers = membersDbResult.value.rows as unknown as DbMember[];
+    lastSync = allMembers[0].updated_at.slice(0, 10);
   }
 
   const alterMap = new Map<string, string>();
@@ -63,51 +62,43 @@ miembros.get("/", async (c) => {
   }
 
   const alterNames = new Set([...alterMap.values()].map((v) => v.toLowerCase()));
-  const memberList = allMembers.filter((m) => !alterNames.has(m.memberName.toLowerCase()));
+  const memberList = allMembers.filter((m) => !alterNames.has(m.member_name.toLowerCase()));
 
-  const profiles = await Promise.all(
-    memberList.map((m) =>
-      fetch(`${IDLE_BASE}/api/Player/profile/simple/${encodeURIComponent(m.memberName)}`)
-        .then((r) => r.json() as Promise<SimpleProfile>)
-        .catch(() => ({ hoursOffline: -1 }))
-    )
-  );
+  const datalistOptions = allMembers.map((m) => `<option value="${esc(m.member_name)}">`).join("");
 
-  const datalistOptions = allMembers.map((m) => `<option value="${esc(m.memberName)}">`).join("");
-
-  const rows =
+    const rows =
     memberList.length === 0
       ? `<tr><td colspan="7" class="py-8 text-center text-gray-500 text-sm">Sin miembros — pulsa <strong class="text-white">🔄 Actualizar</strong> para cargar desde la API</td></tr>`
-      : memberList.map((m, i) => {
-          const rpg = rpgMap.get(m.memberName.toLowerCase());
-          const offline = profiles[i].hoursOffline;
-          const offlineText = offline < 0 ? "—" : `${Math.round(offline)}h`;
+      : memberList.map((m) => {
+          const rpg = rpgMap.get(m.member_name.toLowerCase());
+          const offline = m.hours_offline;
+          const offlineText = (offline === null || offline < 0) ? "—" : `${Math.round(offline)}h`;
           const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-gray-400";
           const rankLabel = RANK_LABELS[m.rank] ?? `Rango ${m.rank}`;
-          const currentAlter = alterMap.get(m.memberName.toLowerCase()) ?? "";
+          const currentAlter = alterMap.get(m.member_name.toLowerCase()) ?? "";
 
           return `
-    <tr class="border-b border-gray-800 hover:bg-gray-800/40 transition text-sm">
-      <td class="py-2.5 px-4 font-medium">${esc(m.memberName)}</td>
-      <td class="py-2.5 px-4 text-gray-400">${esc(rankLabel)}</td>
-      <td class="py-2.5 px-4 text-purple-400">${rpg ? rpg.title : "—"}</td>
-      <td class="py-2.5 px-4 text-center text-gray-300">${rpg ? rpg.level : "—"}</td>
-      <td class="py-2.5 px-4 text-right font-mono text-cyan-400">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
+    <tr class="border-b border-stone-800/50 hover:bg-stone-800/40 transition text-sm">
+      <td class="py-2.5 px-4 font-medium">${esc(m.member_name)}</td>
+      <td class="py-2.5 px-4 text-stone-500">${esc(rankLabel)}</td>
+      <td class="py-2.5 px-4 text-purple-400 font-rpg uppercase text-[10px]">${rpg ? rpg.title : "—"}</td>
+      <td class="py-2.5 px-4 text-center text-stone-300 font-rpg">${rpg ? rpg.level : "—"}</td>
+      <td class="py-2.5 px-4 text-right font-mono text-cyan-400 text-xs">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
       <td class="py-2.5 px-3">
         <form method="POST" action="/admin/miembros/alter" class="flex items-center gap-1.5">
-          <input type="hidden" name="username" value="${esc(m.memberName)}" />
+          <input type="hidden" name="username" value="${esc(m.member_name)}" />
           <input type="text" name="alter" list="clan-members-list"
             value="${esc(currentAlter)}" placeholder="Buscar…" autocomplete="off"
             onchange="setTimeout(()=>this.form.submit(),50)"
-            class="w-32 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:border-purple-500 focus:outline-none" />
+            class="w-32 bg-stone-900 border border-stone-800 rounded px-2 py-1 text-xs text-white focus:border-yellow-600 focus:outline-none transition" />
           ${currentAlter
             ? `<button type="button"
-                 onclick="fetch('/admin/miembros/alter/quitar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username=${encodeURIComponent(m.memberName)}'}).then(()=>location.reload())"
-                 class="text-gray-600 hover:text-red-400 transition text-xs">✕</button>`
+                 onclick="fetch('/admin/miembros/alter/quitar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username=${encodeURIComponent(m.member_name)}'}).then(()=>location.reload())"
+                 class="text-stone-600 hover:text-red-400 transition text-xs">✕</button>`
             : ""}
         </form>
       </td>
-      <td class="py-2.5 px-4 text-right ${offlineColor}">${offlineText}</td>
+      <td class="py-2.5 px-4 text-right font-mono text-xs ${offlineColor}">${offlineText}</td>
     </tr>`;
         }).join("");
 
@@ -121,15 +112,15 @@ miembros.get("/", async (c) => {
     ${syncError ? `<div class="bg-red-900/30 border border-red-700 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">⚠️ ${esc(decodeURIComponent(syncError))}</div>` : ""}
     <datalist id="clan-members-list">${datalistOptions}</datalist>
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h2 class="font-semibold">Miembros del clan</h2>
+    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-xl">
+      <div class="px-6 py-4 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
+        <h2 class="font-bold font-rpg uppercase tracking-widest text-sm text-yellow-500">Miembros del clan</h2>
         <div class="flex items-center gap-4">
-          ${lastSync ? `<span class="text-xs text-gray-600">Sync: ${lastSync}</span>` : ""}
-          <span class="text-xs text-gray-500">${memberList.length} miembros · semana desde ${weekStart}</span>
+          ${lastSync ? `<span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">Sincronizado: ${lastSync}</span>` : ""}
+          <span class="text-[10px] text-stone-400 font-rpg uppercase tracking-widest">${memberList.length} miembros</span>
           <form method="POST" action="/admin/miembros/sync">
             <button type="submit"
-              class="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg transition">
+              class="text-[10px] font-rpg uppercase tracking-widest bg-yellow-700 hover:bg-yellow-600 text-stone-950 px-3 py-1.5 rounded-lg transition shadow-lg active:scale-95">
               🔄 Actualizar
             </button>
           </form>
@@ -137,14 +128,14 @@ miembros.get("/", async (c) => {
       </div>
       <table class="w-full">
         <thead>
-          <tr class="text-xs text-gray-500 uppercase border-b border-gray-800">
-            <th class="py-3 px-4 text-left">Jugador</th>
-            <th class="py-3 px-4 text-left">Rango</th>
-            <th class="py-3 px-4 text-left">Título RPG</th>
-            <th class="py-3 px-4 text-center">Nivel</th>
-            <th class="py-3 px-4 text-right">EXP Semanal</th>
-            <th class="py-3 px-4 text-left">Alter</th>
-            <th class="py-3 px-4 text-right">Offline</th>
+          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
+            <th class="py-3 px-4 text-left font-rpg tracking-widest">Jugador</th>
+            <th class="py-3 px-4 text-left font-rpg tracking-widest">Rango</th>
+            <th class="py-3 px-4 text-left font-rpg tracking-widest">Título RPG</th>
+            <th class="py-3 px-4 text-center font-rpg tracking-widest">Nivel</th>
+            <th class="py-3 px-4 text-right font-rpg tracking-widest">EXP Semanal</th>
+            <th class="py-3 px-4 text-left font-rpg tracking-widest">Alter</th>
+            <th class="py-3 px-4 text-right font-rpg tracking-widest">Offline</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>

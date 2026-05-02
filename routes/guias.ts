@@ -4,10 +4,9 @@ import { publicLayout, esc } from "../views/layout.ts";
 
 // ─── Tipos (deben coincidir con admin/guias.ts) ───────────────────────────────
 
-export interface StatField   { label: string; value: string; color: "default" | "accent" | "danger" }
+export interface StatField   { label: string; value: string; color: string }
 export interface DropField   { icon: string; name: string; rate: string; rare: boolean }
 export interface StepField   { text: string }
-
 
 export interface GuideData {
   bossEmoji: string;
@@ -15,51 +14,47 @@ export interface GuideData {
   imageBase64: string;
   category: string;
   subtitle: string;
-  badges: { label: string; color: "gold" | "purple" | "red" | "green" }[];
+  badges: { label: string; color: string }[];
   infoBox: string;
   stats: StatField[];
   warningBox: string;
   steps: StepField[];
-
   drops: DropField[];
   tipBox: string;
 }
 
 // ─── Renderer visual ──────────────────────────────────────────────────────────
 
-export function renderGuide(title: string, data: GuideData, author: string, date: string): string {
-  const badgeColorMap: Record<string, string> = {
-    gray:   "border-gray-600 text-gray-400",
-    Gris:   "border-gray-600 text-gray-400",
-    red:    "border-red-600 text-red-400",
-    Rojo:   "border-red-600 text-red-400",
-    green:  "border-green-600 text-green-400",
-    Verde:  "border-green-600 text-green-400",
-    yellow: "border-yellow-600 text-yellow-400",
-    Amarillo: "border-yellow-600 text-yellow-400",
-    gold:   "border-yellow-600 text-yellow-400",
-    blue:   "border-blue-600 text-blue-400",
-    Azul:   "border-blue-600 text-blue-400",
-    purple: "border-purple-600 text-purple-400",
-    Morado: "border-purple-600 text-purple-400",
-    orange: "border-orange-600 text-orange-400",
-    Naranja: "border-orange-600 text-orange-400",
-    cyan:   "border-cyan-600 text-cyan-400",
-    Cyan:   "border-cyan-600 text-cyan-400",
-  };
+const badgeColorMap: Record<string, string> = {
+  gray:   "border-stone-600 text-stone-400 bg-stone-900/30",
+  Gris:   "border-stone-600 text-stone-400 bg-stone-900/30",
+  red:    "border-red-500 text-red-400 bg-red-950/20",
+  Rojo:   "border-red-500 text-red-400 bg-red-950/20",
+  green:  "border-emerald-500 text-emerald-400 bg-emerald-950/20",
+  Verde:  "border-emerald-500 text-emerald-400 bg-emerald-950/20",
+  yellow: "border-yellow-500 text-yellow-400 bg-yellow-950/20",
+  Amarillo: "border-yellow-500 text-yellow-400 bg-yellow-950/20",
+  gold:   "border-amber-500 text-amber-400 bg-amber-950/20",
+  blue:   "border-blue-500 text-blue-400 bg-blue-950/20",
+  Azul:   "border-blue-500 text-blue-400 bg-blue-950/20",
+  purple: "border-purple-500 text-purple-400 bg-purple-950/20",
+  Morado: "border-purple-500 text-purple-400 bg-purple-950/20",
+  orange: "border-orange-500 text-orange-400 bg-orange-950/20",
+  Naranja: "border-orange-500 text-orange-400 bg-orange-950/20",
+  cyan:   "border-cyan-500 text-cyan-400 bg-cyan-950/20",
+  Cian:   "border-cyan-500 text-cyan-400 bg-cyan-950/20",
+};
 
+export function renderGuide(title: string, data: GuideData, author: string, date: string): string {
   const statColorMap: Record<string, string> = {
-    gray:    "text-gray-400",
-    Gris:    "text-gray-400",
-    default: "text-gray-400",
+    default: "text-stone-400",
+    Gris:    "text-stone-400",
     red:     "text-red-400",
     Rojo:    "text-red-400",
-    danger:  "text-red-400",
-    green:   "text-green-400",
-    Verde:   "text-green-400",
-    yellow:  "text-yellow-400",
-    Amarillo: "text-yellow-400",
-    accent:  "text-yellow-400",
+    green:   "text-emerald-400",
+    Verde:   "text-emerald-400",
+    yellow:  "text-yellow-500",
+    Amarillo: "text-yellow-500",
     blue:    "text-blue-400",
     Azul:    "text-blue-400",
     purple:  "text-purple-400",
@@ -67,27 +62,24 @@ export function renderGuide(title: string, data: GuideData, author: string, date
     orange:  "text-orange-400",
     Naranja: "text-orange-400",
     cyan:    "text-cyan-400",
-    Cyan:    "text-cyan-400",
+    Cian:    "text-cyan-400",
   };
 
-  // HERO — prioridad: base64 > URL externa > emoji
   const imageSrc = data.imageBase64 || data.imageUrl || "";
   const heroMedia = imageSrc
-    ? `<div class="guide-hero-img"><img src="${esc(imageSrc)}" alt="${esc(title)}" /></div>`
+    ? `<div class="guide-hero-img shadow-2xl"><img src="${esc(imageSrc)}" alt="${esc(title)}" /></div>`
     : data.bossEmoji
-      ? `<div class="guide-hero-img">${esc(data.bossEmoji)}</div>`
+      ? `<div class="guide-hero-img text-6xl shadow-2xl">${esc(data.bossEmoji)}</div>`
       : "";
 
   const badges = (data.badges ?? []).map(b => `
-    <span class="guide-badge ${badgeColorMap[b.color] ?? badgeColorMap.gold}">
+    <span class="guide-badge ${badgeColorMap[b.color] || badgeColorMap.gold}">
       ${esc(b.label)}
     </span>`).join("");
 
-  // INFO BOX
   const infoBox = data.infoBox ? `
     <div class="guide-box guide-box--info">${esc(data.infoBox)}</div>` : "";
 
-  // STATS
   const statsGrid = (data.stats ?? []).length > 0 ? `
     <div class="guide-section">
       <div class="guide-section-header">📊 Estadísticas</div>
@@ -96,13 +88,12 @@ export function renderGuide(title: string, data: GuideData, author: string, date
           ${data.stats.map(s => `
             <div class="guide-stat-card">
               <div class="guide-stat-label">${esc(s.label)}</div>
-              <div class="guide-stat-value ${statColorMap[s.color] ?? ""}">${esc(s.value)}</div>
+              <div class="guide-stat-value ${statColorMap[s.color] || ""}">${esc(s.value)}</div>
             </div>`).join("")}
         </div>
       </div>
     </div>` : "";
 
-  // ESTRATEGIA
   const warningBox = data.warningBox ? `
     <div class="guide-box guide-box--warn">${esc(data.warningBox)}</div>` : "";
 
@@ -110,12 +101,10 @@ export function renderGuide(title: string, data: GuideData, author: string, date
     <div class="guide-step-list">
       ${data.steps.map((s, i) => `
         <div class="guide-step">
-          <div class="guide-step-num">${i + 1}</div>
+          <div class="guide-step-num font-rpg">${i + 1}</div>
           <div class="guide-step-content">${esc(s.text)}</div>
         </div>`).join("")}
     </div>` : "";
-
-
 
   const estrategia = (data.warningBox || steps) ? `
     <div class="guide-section">
@@ -126,7 +115,6 @@ export function renderGuide(title: string, data: GuideData, author: string, date
       </div>
     </div>` : "";
 
-  // DROPS
   const dropsGrid = (data.drops ?? []).length > 0 ? `
     <div class="guide-section">
       <div class="guide-section-header">💰 Drops destacados</div>
@@ -144,58 +132,46 @@ export function renderGuide(title: string, data: GuideData, author: string, date
       </div>
     </div>` : "";
 
-  // TIP FINAL
   const tipBox = data.tipBox ? `
     <div class="guide-box guide-box--tip">${esc(data.tipBox)}</div>` : "";
 
   return `
     <style>
-      /* ── Variables ── */
       :root {
-        --g-bg:      #0f1117;
-        --g-surf:    #181c27;
-        --g-surf2:   #1e2335;
-        --g-border:  #2e3555;
-        --g-accent:  #c9a84c;
-        --g-purple:  #7e57c2;
-        --g-danger:  #e05c5c;
-        --g-success: #4caf7e;
-        --g-text:    #e8e8f0;
-        --g-muted:   #8890b0;
-        --g-glow:    rgba(201,168,76,0.18);
+        --g-bg:      #0c0a09;
+        --g-surf:    #1c1917;
+        --g-surf2:   #0c0a09;
+        --g-border:  #44403c;
+        --g-accent:  #eab308;
+        --g-purple:  #a855f7;
+        --g-danger:  #ef4444;
+        --g-success: #22c55e;
+        --g-text:    #d6d3d1;
+        --g-muted:   #78716c;
       }
 
-      /* ── Hero ── */
       .guide-hero {
         position: relative;
-        background: linear-gradient(135deg,#0a0d16 0%,#1a1030 50%,#0f1117 100%);
-        border: 1px solid var(--g-border);
-        border-bottom: 2px solid var(--g-accent);
-        border-radius: 16px;
-        padding: 36px 28px;
+        background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+        border: 1px solid rgba(234,179,8,0.2);
+        border-radius: 24px;
+        padding: 48px 40px;
         display: flex;
         align-items: center;
-        gap: 28px;
+        gap: 40px;
         overflow: hidden;
-        margin-bottom: 24px;
-      }
-      .guide-hero::before {
-        content:'';
-        position:absolute;
-        inset:0;
-        background:radial-gradient(ellipse at 70% 50%,rgba(126,87,194,.15) 0%,transparent 65%);
-        pointer-events:none;
+        margin-bottom: 40px;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
       }
       .guide-hero-img {
         flex-shrink:0;
-        width:110px; height:110px;
+        width:140px; height:140px;
         border-radius:50%;
-        border:3px solid var(--g-accent);
+        border:4px solid var(--g-accent);
         background:var(--g-surf2);
         display:flex; align-items:center; justify-content:center;
-        font-size:52px;
-        box-shadow:0 0 28px var(--g-glow);
         position:relative; z-index:1;
+        background: radial-gradient(circle, #292524 0%, #1c1917 100%);
       }
       .guide-hero-img img {
         width:100%; height:100%;
@@ -203,137 +179,140 @@ export function renderGuide(title: string, data: GuideData, author: string, date
       }
       .guide-category {
         display:inline-block;
-        background:rgba(126,87,194,.25);
-        color:#b39ddb;
-        border:1px solid var(--g-purple);
+        background:rgba(234,179,8,0.1);
+        color:var(--g-accent);
+        border:1px solid rgba(234,179,8,0.3);
         border-radius:4px;
-        font-size:11px;
-        letter-spacing:2px;
+        font-size:10px;
+        letter-spacing:3px;
         text-transform:uppercase;
-        padding:3px 10px;
-        margin-bottom:10px;
+        padding:4px 12px;
+        margin-bottom:12px;
+        font-family: 'Cinzel', serif;
       }
       .guide-title {
-        font-size:26px; font-weight:800;
-        color:var(--g-accent);
-        text-shadow:0 0 18px rgba(201,168,76,.4);
-        line-height:1.2; margin-bottom:8px;
+        font-size:42px; font-weight:700;
+        color:white;
+        line-height:1.1; margin-bottom:12px;
+        font-family: 'Cinzel', serif;
+        letter-spacing: 2px;
       }
-      .guide-subtitle { color:var(--g-muted); font-size:13px; margin-bottom:14px; }
-      .guide-badges { display:flex; gap:8px; flex-wrap:wrap; }
+      .guide-subtitle { color:var(--g-muted); font-size:15px; margin-bottom:20px; font-family: 'Merriweather', serif; font-style: italic; }
+      .guide-badges { display:flex; gap:10px; flex-wrap:wrap; }
       .guide-badge {
-        display:flex; align-items:center; gap:5px;
-        background:var(--g-surf2);
+        display:flex; align-items:center; gap:6px;
         border:1px solid currentColor;
         border-radius:20px;
-        padding:4px 12px;
-        font-size:12px; font-weight:700;
+        padding:5px 14px;
+        font-size:11px; font-weight:700;
+        font-family: 'Cinzel', serif;
+        letter-spacing: 1px;
       }
-      .guide-meta { color:var(--g-muted); font-size:12px; margin-bottom:24px; }
+      .guide-meta { color:var(--g-muted); font-size:13px; margin-bottom:32px; font-family: 'Cinzel', serif; letter-spacing: 1px; }
 
-      /* ── Info boxes ── */
       .guide-box {
-        border-radius:0 8px 8px 0;
-        padding:14px 16px;
-        margin-bottom:16px;
-        font-size:14px;
-        line-height:1.6;
-      }
-      .guide-box--info { border-left:4px solid var(--g-purple); background:rgba(126,87,194,.1); color:#c5b8e8; }
-      .guide-box--warn { border-left:4px solid var(--g-danger);  background:rgba(224,92,92,.1);  color:#f0a0a0; }
-      .guide-box--tip  { border-left:4px solid var(--g-success); background:rgba(76,175,126,.1); color:#90dfb4; }
-
-      /* ── Section ── */
-      .guide-section {
-        background:var(--g-surf);
-        border:1px solid var(--g-border);
         border-radius:12px;
-        margin-bottom:20px;
+        padding:20px 24px;
+        margin-bottom:24px;
+        font-size:15px;
+        line-height:1.7;
+        background: rgba(28, 25, 23, 0.6);
+        border: 1px solid rgba(234,179,8,0.1);
+      }
+      .guide-box--info { border-left:4px solid var(--g-purple); color:#d8b4fe; }
+      .guide-box--warn { border-left:4px solid var(--g-danger); color:#fca5a5; }
+      .guide-box--tip  { border-left:4px solid var(--g-success); color:#86efac; }
+
+      .guide-section {
+        background:rgba(28, 25, 23, 0.4);
+        border:1px solid rgba(234,179,8,0.1);
+        border-radius:20px;
+        margin-bottom:32px;
         overflow:hidden;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
       }
       .guide-section-header {
-        display:flex; align-items:center; gap:10px;
-        padding:12px 18px;
-        background:var(--g-surf2);
-        border-bottom:1px solid var(--g-border);
-        font-size:12px; font-weight:700;
-        letter-spacing:1.5px; text-transform:uppercase;
+        padding:16px 24px;
+        background:rgba(0,0,0,0.2);
+        border-bottom:1px solid rgba(234,179,8,0.1);
+        font-size:13px; font-weight:700;
+        letter-spacing:2px; text-transform:uppercase;
         color:var(--g-accent);
+        font-family: 'Cinzel', serif;
       }
-      .guide-section-body { padding:18px; }
+      .guide-section-body { padding:24px; }
 
-      /* ── Stats ── */
       .guide-stat-grid {
         display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-        gap:10px;
+        grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+        gap:12px;
       }
       .guide-stat-card {
-        background:var(--g-surf2);
-        border:1px solid var(--g-border);
-        border-radius:8px;
-        padding:12px 14px;
+        background:rgba(0,0,0,0.2);
+        border:1px solid rgba(234,179,8,0.05);
+        border-radius:12px;
+        padding:16px;
         text-align:center;
+        transition: all 0.3s;
       }
-      .guide-stat-label { font-size:10px; color:var(--g-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
-      .guide-stat-value { font-size:20px; font-weight:700; }
+      .guide-stat-card:hover { border-color: rgba(234,179,8,0.3); background: rgba(0,0,0,0.3); }
+      .guide-stat-label { font-size:10px; color:var(--g-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px; font-family: 'Cinzel', serif; }
+      .guide-stat-value { font-size:22px; font-weight:700; font-family: 'Cinzel', serif; }
 
-      /* ── Steps ── */
-      .guide-step-list { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
-      .guide-step { display:flex; gap:12px; align-items:flex-start; }
+      .guide-step-list { display:flex; flex-direction:column; gap:16px; }
+      .guide-step { display:flex; gap:16px; align-items:flex-start; }
       .guide-step-num {
-        width:28px; height:28px; border-radius:50%;
-        background:var(--g-accent); color:#0f1117;
-        font-weight:700; font-size:13px; flex-shrink:0;
+        width:32px; height:32px; border-radius:8px;
+        background:var(--g-accent); color:var(--g-bg);
+        font-weight:700; font-size:14px; flex-shrink:0;
         display:flex; align-items:center; justify-content:center;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
       }
-      .guide-step-content { padding-top:3px; font-size:14px; color:var(--g-text); }
+      .guide-step-content { padding-top:4px; font-size:15px; color:var(--g-text); }
 
-      /* ── Bullets ── */
-      .guide-bullet-list { list-style:none; display:flex; flex-direction:column; gap:8px; }
-      .guide-bullet-item {
-        display:flex; align-items:flex-start; gap:10px;
-        padding:10px 13px;
-        background:var(--g-surf2);
-        border:1px solid var(--g-border);
-        border-radius:8px; font-size:14px;
-      }
-      .guide-bullet-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
-
-      /* ── Divider ── */
-      .guide-divider {
-        height:1px;
-        background:linear-gradient(90deg,transparent,var(--g-border),transparent);
-        margin:16px 0;
-      }
-
-      /* ── Drops ── */
       .guide-drop-grid {
         display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-        gap:10px;
+        grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+        gap:12px;
       }
       .guide-drop-card {
-        background:var(--g-surf2);
-        border:1px solid var(--g-border);
-        border-radius:8px;
-        padding:12px 14px;
-        display:flex; align-items:center; gap:10px;
+        background:rgba(0,0,0,0.2);
+        border:1px solid rgba(234,179,8,0.05);
+        border-radius:12px;
+        padding:16px;
+        display:flex; align-items:center; gap:14px;
+        transition: all 0.3s;
       }
-      .guide-drop-card--rare { border-color:var(--g-accent); background:rgba(201,168,76,.08); }
-      .guide-drop-icon { font-size:22px; }
-      .guide-drop-name { font-size:13px; font-weight:700; color:var(--g-text); }
-      .guide-drop-rate { font-size:11px; color:var(--g-muted); }
+      .guide-drop-card:hover { border-color: rgba(234,179,8,0.2); }
+      .guide-drop-card--rare { border-color:var(--g-accent); background:rgba(234,179,8,0.05); }
+      .guide-drop-icon { font-size:28px; }
+      .guide-drop-name { font-size:14px; font-weight:700; color:white; font-family: 'Cinzel', serif; }
+      .guide-drop-rate { font-size:12px; color:var(--g-muted); }
 
-      /* ── Footer ── */
       .guide-footer {
         text-align:center; color:var(--g-muted);
-        font-size:12px; letter-spacing:1px;
-        padding:20px 0 4px;
+        font-size:11px; letter-spacing:3px;
+        padding:40px 0 20px;
+        text-transform: uppercase;
+        font-family: 'Cinzel', serif;
       }
+      .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--g-accent);
+        font-family: 'Cinzel', serif;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 32px;
+        transition: all 0.3s;
+        opacity: 0.7;
+      }
+      .btn-back:hover { opacity: 1; transform: translateX(-4px); }
     </style>
 
-    <a href="/guias" class="text-purple-400 hover:text-purple-300 text-sm transition mb-6 inline-block">← Volver a guías</a>
+    <a href="/guias" class="btn-back">← Volver a los Pergaminos</a>
 
     <!-- HERO -->
     <div class="guide-hero">
@@ -346,7 +325,7 @@ export function renderGuide(title: string, data: GuideData, author: string, date
       </div>
     </div>
 
-    <p class="guide-meta">Por <strong>${esc(author)}</strong> · ${esc(date)}</p>
+    <p class="guide-meta">Escrito por <span class="text-stone-100">${esc(author)}</span> · ${esc(date)}</p>
 
     ${infoBox}
     ${statsGrid}
@@ -354,7 +333,7 @@ export function renderGuide(title: string, data: GuideData, author: string, date
     ${dropsGrid}
     ${tipBox}
 
-    <div class="guide-footer">✦ Clan Nightcore · Guías ✦</div>
+    <div class="guide-footer">✦ Sabiduría del Clan Nightcore ✦</div>
   `;
 }
 
@@ -372,44 +351,57 @@ guias.get("/", async (c) => {
 
   const cards =
     list.length === 0
-      ? `<p class="text-gray-500 text-center py-16">Aún no hay guías publicadas.</p>`
+      ? `<p class="text-stone-500 text-center py-20 italic">Aún no hay pergaminos escritos en esta biblioteca.</p>`
       : list.map((g) => {
           let emoji = "📖";
           let category = "";
           let imgSrc = "";
+          let badges: {label: string; color: string}[] = [];
           try {
-            const d = JSON.parse(g.content) as { bossEmoji?: string; category?: string; imageUrl?: string; imageBase64?: string };
+            const d = JSON.parse(g.content);
             if (d.bossEmoji) emoji = d.bossEmoji;
             if (d.category) category = d.category;
             imgSrc = d.imageBase64 || d.imageUrl || "";
-          } catch { /* content antiguo */ }
+            if (d.badges) badges = d.badges;
+          } catch { /* ... */ }
 
           const thumb = imgSrc
-            ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-14 h-14 rounded-full object-cover object-center border border-gray-700 flex-shrink-0" />`
-            : `<div class="w-14 h-14 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-3xl flex-shrink-0">${esc(emoji)}</div>`;
+            ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-20 h-20 rounded-2xl object-cover object-center border border-yellow-900/30 flex-shrink-0 shadow-xl" />`
+            : `<div class="w-20 h-20 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">${esc(emoji)}</div>`;
+
+          const renderedBadges = badges.map(b => `
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border ${badgeColorMap[b.color] || badgeColorMap.gold} font-rpg uppercase tracking-tighter">
+              ${esc(b.label)}
+            </span>`).join("");
 
           return `
             <a href="/guias/${esc(g.slug)}"
-              class="flex items-center gap-4 bg-gray-900 border border-gray-800 rounded-xl p-5 hover:border-purple-700 transition group">
+              class="flex flex-col sm:flex-row items-center gap-6 bg-stone-900/40 border border-yellow-900/10 rounded-2xl p-6 hover:border-yellow-600/50 transition group hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-900/20 duration-300">
               ${thumb}
-              <div>
-                ${category ? `<p class="text-xs text-purple-400 uppercase tracking-widest mb-1">${esc(category)}</p>` : ""}
-                <h3 class="font-semibold text-white text-lg mb-1 group-hover:text-purple-300 transition">${esc(g.title)}</h3>
-                <p class="text-gray-500 text-sm">Por ${esc(g.author)} · ${g.created_at.slice(0, 10)}</p>
+              <div class="flex-1 text-center sm:text-left">
+                ${category ? `<p class="text-[10px] text-yellow-600 uppercase font-rpg tracking-[0.3em] mb-2">${esc(category)}</p>` : ""}
+                <h3 class="font-bold text-white text-xl mb-2 group-hover:text-yellow-500 transition font-rpg uppercase tracking-wider">${esc(g.title)}</h3>
+                <div class="flex flex-wrap justify-center sm:justify-start gap-2 mb-3">${renderedBadges}</div>
+                <p class="text-stone-500 text-xs font-rpg uppercase tracking-widest">Escrito por ${esc(g.author)} · ${g.created_at.slice(0, 10)}</p>
+              </div>
+              <div class="text-yellow-600 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-2 hidden sm:block">
+                <span class="text-2xl">→</span>
               </div>
             </a>`;
         }).join("");
 
   const content = `
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold">📖 Guías del Clan</h1>
-      <p class="text-gray-400 mt-2">Estrategias, consejos y recursos para miembros de Nightcore</p>
+    <div class="max-w-4xl mx-auto">
+      <div class="mb-16 text-center relative py-12">
+        <h1 class="text-5xl font-bold text-white font-rpg tracking-[0.2em] uppercase drop-shadow-2xl">Biblioteca</h1>
+        <p class="text-yellow-700 mt-4 font-rpg text-xs tracking-[0.4em] uppercase opacity-70">El conocimiento es el arma más poderosa del guerrero</p>
+      </div>
+      <div class="grid gap-6">${cards}</div>
     </div>
-    <div class="grid gap-4">${cards}</div>
   `;
 
   const user = c.get("user");
-  return c.html(publicLayout("Guías", content, user));
+  return c.html(publicLayout("Biblioteca de Guías", content, user));
 });
 
 guias.get("/:slug", async (c) => {
@@ -428,19 +420,20 @@ guias.get("/:slug", async (c) => {
     const data = JSON.parse(g.content) as GuideData;
     rendered = renderGuide(g.title, data, g.author, g.created_at.slice(0, 10));
   } catch {
-    // Fallback: guías antiguas en Markdown plano (compatibilidad)
     const { marked } = await import("npm:marked");
     const DOMPurify = (await import("npm:isomorphic-dompurify")).default;
     const html = DOMPurify.sanitize(await marked(g.content));
     rendered = `
-      <a href="/guias" class="text-purple-400 hover:text-purple-300 text-sm transition mb-6 inline-block">← Volver a guías</a>
-      <h1 class="text-4xl font-bold text-white mb-2">${esc(g.title)}</h1>
-      <p class="text-gray-500 text-sm mb-8">Por ${esc(g.author)} · ${g.created_at.slice(0, 10)}</p>
-      <div class="prose bg-gray-900 rounded-xl border border-gray-800 p-8">${html}</div>
+      <a href="/guias" class="btn-back">← Volver a los Pergaminos</a>
+      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-3xl p-10 shadow-2xl">
+        <h1 class="text-4xl font-bold text-white mb-4 font-rpg tracking-wider uppercase">${esc(g.title)}</h1>
+        <p class="text-stone-500 text-xs mb-10 font-rpg uppercase tracking-widest">Escrito por ${esc(g.author)} · ${g.created_at.slice(0, 10)}</p>
+        <div class="prose max-w-none text-stone-300 leading-relaxed">${html}</div>
+      </div>
     `;
   }
 
-  const content = `<div class="max-w-3xl mx-auto">${rendered}</div>`;
+  const content = `<div class="max-w-4xl mx-auto">${rendered}</div>`;
   const user = c.get("user");
   return c.html(publicLayout(g.title, content, user));
 });

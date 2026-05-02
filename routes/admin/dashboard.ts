@@ -51,54 +51,57 @@ dashboard.get("/", async (c) => {
 
   const guideRows =
     guides.length === 0
-      ? `<tr><td colspan="4" class="py-6 text-center text-gray-600 text-sm">No hay guías aún</td></tr>`
+      ? `<tr><td colspan="4" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">No hay guías aún</td></tr>`
       : guides
           .map(
             (g) => `
-      <tr class="border-b border-gray-800 hover:bg-gray-800/40 text-sm">
-        <td class="py-2.5 px-4">${g.title}</td>
-        <td class="py-2.5 px-4 text-gray-400">${g.author}</td>
-        <td class="py-2.5 px-4">
-          <span class="inline-block text-xs px-2 py-0.5 rounded-full ${g.published ? "bg-green-900/50 text-green-400" : "bg-gray-800 text-gray-500"}">
+      <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
+        <td class="py-4 px-6 font-bold text-stone-200">${g.title}</td>
+        <td class="py-4 px-6 text-stone-500 font-rpg text-xs uppercase tracking-widest">${g.author}</td>
+        <td class="py-4 px-6">
+          <span class="inline-block text-[10px] px-2 py-0.5 rounded border font-rpg uppercase tracking-widest ${g.published ? "border-green-800/50 text-green-400 bg-green-950/20" : "border-stone-700 text-stone-500 bg-stone-900/20"}">
             ${g.published ? "Publicada" : "Borrador"}
           </span>
         </td>
-        <td class="py-2.5 px-4 text-gray-500">${g.created_at.slice(0, 10)}</td>
+        <td class="py-4 px-6 text-stone-600 font-mono text-xs">${g.created_at.slice(0, 10)}</td>
       </tr>`
           )
           .join("");
 
   const content = `
-    <div class="grid grid-cols-3 gap-4 mb-8">
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <p class="text-gray-500 text-sm mb-1">EXP ganada hoy</p>
-        <p class="text-3xl font-bold text-cyan-400">${Number(todayExp).toLocaleString()}</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">📈</div>
+        <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-[0.2em] mb-2 italic">EXP Ganada Hoy</p>
+        <p class="text-4xl font-bold text-yellow-600 font-rpg">${Number(todayExp).toLocaleString()}</p>
       </div>
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <p class="text-gray-500 text-sm mb-1">Evento activo</p>
-        <p class="text-sm font-medium text-purple-400 leading-snug mt-1">${eventLabel.split("—")[0].trim()}</p>
+      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">⚔️</div>
+        <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-[0.2em] mb-2 italic">Evento Activo</p>
+        <p class="text-lg font-bold text-purple-400 font-rpg leading-snug mt-1 uppercase tracking-wider">${eventLabel.split("—")[0].trim()}</p>
       </div>
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <p class="text-gray-500 text-sm mb-1">En whitelist</p>
-        <p class="text-3xl font-bold text-white">${wlCount}</p>
+      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">📜</div>
+        <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-[0.2em] mb-2 italic">En Whitelist</p>
+        <p class="text-4xl font-bold text-stone-200 font-rpg">${wlCount}</p>
       </div>
     </div>
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h2 class="font-semibold">Últimas guías</h2>
+    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
+      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
+        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">📜 Últimas Guías</h2>
         <a href="/admin/guias/nueva"
-          class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg transition">
-          + Nueva guía
+          class="text-[10px] bg-yellow-700 hover:bg-yellow-600 text-stone-950 px-4 py-2 rounded-lg transition font-rpg font-bold uppercase tracking-widest shadow-lg shadow-yellow-950/20 active:scale-95">
+          + Nueva Guía
         </a>
       </div>
       <table class="w-full">
         <thead>
-          <tr class="text-xs text-gray-500 uppercase border-b border-gray-800">
-            <th class="py-3 px-4 text-left">Título</th>
-            <th class="py-3 px-4 text-left">Autor</th>
-            <th class="py-3 px-4 text-left">Estado</th>
-            <th class="py-3 px-4 text-left">Fecha</th>
+          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Título</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Autor</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Estado</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Fecha</th>
           </tr>
         </thead>
         <tbody>${guideRows}</tbody>

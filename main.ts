@@ -15,6 +15,7 @@ import altersRoute from "./routes/admin/alters.ts";
 
 import { optionalAuth } from "./middleware/optionalAuth.ts";
 import { syncClanMembers } from "./lib/members.ts";
+import jugadoresRoute from "./routes/jugadores.ts";
 
 const app = new Hono();
 
@@ -33,9 +34,11 @@ syncClanMembers();
 app.use("/", optionalAuth);
 app.use("/guias", optionalAuth);
 app.use("/guias/*", optionalAuth);
+app.use("/jugadores", optionalAuth);
 
 app.route("/", homeRoute);
 app.route("/guias", guiasRoute);
+app.route("/jugadores", jugadoresRoute);
 app.route("/auth", authRoute);
 app.route("/setup", setupRoute);
 

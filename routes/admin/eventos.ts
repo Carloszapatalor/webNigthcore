@@ -6,7 +6,6 @@ function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Labels idénticos a los del bot para consistencia en la BD
 const INCURSIONES = [
   { id: "ReckoningOfTheGods",    label: "⚔️ Incursión: El ocaso de los dioses — ¡Iniciamos en 5 min!" },
   { id: "GuardiansOfTheCitadel", label: "🏰 Incursión: Guardianes de la Ciudadela — ¡Iniciamos en 5 min!" },
@@ -52,52 +51,60 @@ eventos.get("/", async (c) => {
 
   const catalogCards = CATALOG.map(
     (group) => `
-    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <h3 class="font-medium text-sm text-gray-400 mb-3">${group.title}</h3>
-      ${group.items
-        .map(
-          (i) =>
-            `<p class="text-sm py-1.5 border-b border-gray-800 last:border-0 text-gray-300">${i.label.split("—")[0].trim()}</p>`
-        )
-        .join("")}
+    <div class="bg-stone-900/60 border border-yellow-900/10 rounded-2xl p-6 shadow-lg">
+      <h3 class="font-bold font-rpg uppercase tracking-[0.2em] text-[10px] text-stone-500 mb-4 border-b border-yellow-900/10 pb-2">${group.title}</h3>
+      <div class="space-y-3">
+        ${group.items
+          .map(
+            (i) =>
+              `<p class="text-xs text-stone-300 font-rpg tracking-wider">${i.label.split("—")[0].trim()}</p>`
+          )
+          .join("")}
+      </div>
     </div>`
   ).join("");
 
   const eventPanel = event
-    ? `<div class="flex items-start justify-between">
-         <div>
-           <span class="inline-block text-xs text-gray-500 uppercase tracking-wide mb-2">${event.category}</span>
-           <p class="text-xl font-semibold text-white">${event.label.split("—")[0].trim()}</p>
-           <p class="text-sm text-gray-500 mt-2">Sorteado a las ${event.selected_at} UTC</p>
+    ? `<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+         <div class="text-center md:text-left">
+           <span class="inline-block text-[10px] font-rpg font-bold text-yellow-600 uppercase tracking-[0.3em] mb-2 px-2 py-1 bg-yellow-900/10 rounded border border-yellow-900/20">${event.category}</span>
+           <p class="text-2xl font-bold text-white font-rpg uppercase tracking-widest leading-relaxed">${event.label.split("—")[0].trim()}</p>
+           <p class="text-[10px] text-stone-500 font-rpg uppercase mt-2 tracking-widest italic">Sorteado a las ${event.selected_at} UTC</p>
          </div>
          <form method="POST" action="/admin/eventos/sortear">
            <button type="submit"
-             class="bg-cyan-700 hover:bg-cyan-600 text-white text-sm px-4 py-2 rounded-lg transition"
+             class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg active:scale-95 whitespace-nowrap"
              onclick="return confirm('¿Forzar nuevo sorteo?')">
              🎲 Nuevo sorteo
            </button>
          </form>
        </div>`
-    : `<div class="flex items-center justify-between">
-         <p class="text-gray-500">No hay evento sorteado para hoy.</p>
+    : `<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+         <p class="text-stone-500 font-rpg uppercase tracking-widest text-xs italic">No hay un evento activo para hoy todavía...</p>
          <form method="POST" action="/admin/eventos/sortear">
            <button type="submit"
-             class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-lg transition">
-             🎲 Sortear ahora
+             class="bg-purple-700 hover:bg-purple-600 text-white text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg shadow-purple-950/20 active:scale-95">
+             🎲 Lanzar Dados
            </button>
          </form>
        </div>`;
 
   const content = `
-    ${ok ? `<div class="bg-green-900/30 border border-green-700 text-green-400 text-sm rounded-lg px-4 py-3 mb-4">Nuevo sorteo realizado</div>` : ""}
+    ${ok ? `<div class="bg-green-900/20 border border-green-800/50 text-green-400 text-xs rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest">✓ Sorteo realizado por mandato divino</div>` : ""}
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-      <h2 class="font-semibold mb-4">Evento de hoy — ${today}</h2>
+    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-10 mb-12 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🎲</div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-8 pb-4 border-b border-yellow-900/10">🎲 Evento del Día — ${today}</h2>
       ${eventPanel}
     </div>
 
-    <h2 class="font-semibold mb-3 text-gray-300">Catálogo disponible</h2>
-    <div class="grid grid-cols-3 gap-4">${catalogCards}</div>
+    <div class="flex items-center gap-4 mb-8">
+      <div class="h-px flex-1 bg-yellow-900/20"></div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-xs text-stone-500 italic">Catálogo de Posibilidades</h2>
+      <div class="h-px flex-1 bg-yellow-900/20"></div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">${catalogCards}</div>
   `;
 
   return c.html(adminLayout("Eventos", content, user, c.req.path));

@@ -15,18 +15,18 @@ whitelist.get("/", async (c) => {
 
   const rows =
     list.length === 0
-      ? `<tr><td colspan="4" class="py-8 text-center text-gray-600 text-sm">La whitelist está vacía</td></tr>`
+      ? `<tr><td colspan="4" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">La biblioteca de exenciones está vacía</td></tr>`
       : list
           .map(
             (r) => `
-      <tr class="border-b border-gray-800 hover:bg-gray-800/40 text-sm">
-        <td class="py-3 px-4 font-medium">${esc(r.username)}</td>
-        <td class="py-3 px-4 text-gray-400">${r.reason ? esc(r.reason) : "—"}</td>
-        <td class="py-3 px-4 text-gray-500">${r.added_at}</td>
-        <td class="py-3 px-4">
+      <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
+        <td class="py-4 px-6 font-bold text-stone-200">${esc(r.username)}</td>
+        <td class="py-4 px-6 text-stone-400 italic">${r.reason ? esc(r.reason) : "—"}</td>
+        <td class="py-4 px-6 text-stone-600 font-mono text-xs">${r.added_at}</td>
+        <td class="py-4 px-6 text-right">
           <form method="POST" action="/admin/whitelist/quitar">
             <input type="hidden" name="username" value="${esc(r.username)}" />
-            <button type="submit" class="text-xs text-red-400 hover:text-red-300 transition">Quitar</button>
+            <button type="submit" class="text-[10px] font-rpg uppercase tracking-widest text-red-400 hover:text-red-300 transition">Quitar</button>
           </form>
         </td>
       </tr>`
@@ -37,35 +37,36 @@ whitelist.get("/", async (c) => {
   const ok = c.req.query("ok");
 
   const content = `
-    ${error ? `<div class="bg-red-900/30 border border-red-700 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">${esc(error)}</div>` : ""}
-    ${ok ? `<div class="bg-green-900/30 border border-green-700 text-green-400 text-sm rounded-lg px-4 py-3 mb-4">Operación realizada correctamente</div>` : ""}
+    ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">${esc(error)}</div>` : ""}
+    ${ok ? `<div class="bg-green-900/20 border border-green-800/50 text-green-400 text-xs rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">✓ Pergamino actualizado correctamente</div>` : ""}
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-      <h2 class="font-semibold mb-4">Añadir a whitelist</h2>
-      <form method="POST" action="/admin/whitelist/anadir" class="flex gap-3">
-        <input name="username" type="text" placeholder="Nombre del jugador" required
-          class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:border-purple-500 focus:outline-none" />
-        <input name="reason" type="text" placeholder="Motivo (opcional)"
-          class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white text-sm focus:border-purple-500 focus:outline-none" />
+    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 mb-10 shadow-xl relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🛡️</div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6">🛡️ Otorgar Inmunidad</h2>
+      <form method="POST" action="/admin/whitelist/anadir" class="flex flex-col sm:flex-row gap-4">
+        <input name="username" type="text" placeholder="Nombre del guerrero" required
+          class="flex-1 bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg tracking-widest uppercase" />
+        <input name="reason" type="text" placeholder="Motivo de la exención"
+          class="flex-1 bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg tracking-widest uppercase" />
         <button type="submit"
-          class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-5 py-2 rounded-lg transition whitespace-nowrap">
-          Añadir
+          class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition whitespace-nowrap shadow-lg active:scale-95">
+          Otorgar
         </button>
       </form>
     </div>
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-        <h2 class="font-semibold">Exentos de inactividad</h2>
-        <span class="text-xs text-gray-500">${list.length} jugadores</span>
+    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
+      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
+        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">📜 Exentos de Inactividad</h2>
+        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">${list.length} guerreros</span>
       </div>
       <table class="w-full">
         <thead>
-          <tr class="text-xs text-gray-500 uppercase border-b border-gray-800">
-            <th class="py-3 px-4 text-left">Jugador</th>
-            <th class="py-3 px-4 text-left">Motivo</th>
-            <th class="py-3 px-4 text-left">Añadido</th>
-            <th class="py-3 px-4"></th>
+          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Jugador</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Motivo</th>
+            <th class="py-4 px-6 text-left font-rpg tracking-widest">Fecha</th>
+            <th class="py-4 px-6"></th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
