@@ -31,7 +31,7 @@ dashboard.get("/", async (c) => {
   ]);
 
   const todayExp = expResult.status === "fulfilled" ? ((expResult.value.rows[0] as any)?.today_exp ?? 0) : 0;
-  const eventLabel = eventResult.status === "fulfilled" && eventResult.value.rows.length > 0 ? (eventResult.value.rows[0] as any).label : "Sin sortear hoy";
+  const eventLabel = eventResult.status === "fulfilled" && eventResult.value.rows.length > 0 ? (eventResult.value.rows[0] as any).label : "Sector Seguro";
   const wlCount = wlResult.status === "fulfilled" ? (wlResult.value.rows[0] as any).cnt : "—";
   const guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as any[]) : [];
   const inactiveList = inactiveResult.status === "fulfilled" ? (inactiveResult.value.rows as any[]) : [];
@@ -42,23 +42,24 @@ dashboard.get("/", async (c) => {
   let adminSections = "";
   if (isHighRank) {
     adminSections = `
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 mb-12">
       <!-- Inactividad Section -->
-      <div class="lg:col-span-1 bg-stone-900/60 border border-red-900/20 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="px-6 py-4 border-b border-red-900/10 flex items-center justify-between bg-red-950/10">
-          <h2 class="font-bold font-rpg uppercase tracking-widest text-xs text-red-400 flex items-center gap-2">
-            <span>⌛</span> Inactividad
+      <div class="lg:col-span-1 glass-panel overflow-hidden flex flex-col hover:border-red-500/20 transition-all duration-500">
+        <div class="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-red-950/5">
+          <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-[10px] text-red-400 flex items-center gap-3">
+            <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)] animate-pulse"></span>
+            Inactividad
           </h2>
-          <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">${inactiveList.length}</span>
+          <span class="text-[9px] text-stone-600 font-rpg uppercase tracking-widest font-bold bg-black/40 px-3 py-1 rounded-full">${inactiveList.length}</span>
         </div>
-        <div class="flex-1 max-h-[350px] overflow-y-auto">
+        <div class="flex-1 max-h-[400px] overflow-y-auto">
           <table class="w-full">
-            <tbody class="divide-y divide-red-900/5">
-              ${inactiveList.length === 0 ? `<tr><td class="py-6 text-center text-stone-600 text-xs italic">Todos activos</td></tr>` : 
+            <tbody class="divide-y divide-white/5">
+              ${inactiveList.length === 0 ? `<tr><td class="py-12 text-center text-stone-700 text-[10px] font-rpg uppercase tracking-widest italic">Nadie inactivo</td></tr>` : 
                 inactiveList.map(m => `
-                <tr class="hover:bg-red-950/5 transition">
-                  <td class="py-3 px-6 text-xs font-bold text-stone-200 truncate max-w-[100px]">${esc(m.member_name)}</td>
-                  <td class="py-3 px-6 text-right font-mono text-[10px] text-red-400 whitespace-nowrap">${Math.round(m.hours_offline)}h</td>
+                <tr class="hover:bg-red-500/5 transition-all">
+                  <td class="py-4 px-8 text-xs font-bold text-stone-300 font-subtitle uppercase tracking-wider truncate max-w-[120px]">${esc(m.member_name)}</td>
+                  <td class="py-4 px-8 text-right font-rpg text-xs text-red-500/80 font-bold whitespace-nowrap drop-shadow-[0_0_5px_rgba(239,68,68,0.2)]">${Math.round(m.hours_offline)} <span class="text-[9px] opacity-40 uppercase tracking-tighter">Horas</span></td>
                 </tr>
               `).join("")}
             </tbody>
@@ -66,23 +67,23 @@ dashboard.get("/", async (c) => {
         </div>
       </div>
 
-      <!-- Reportes Section (Preview Only) -->
-      <div class="lg:col-span-2 bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="px-6 py-4 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-          <h2 class="font-bold font-rpg uppercase tracking-widest text-xs text-yellow-500 flex items-center gap-2">
-            <span>📢</span> Últimos Reportes
+      <!-- Reportes Section -->
+      <div class="lg:col-span-2 glass-panel overflow-hidden flex flex-col hover:border-violet-500/20 transition-all duration-500">
+        <div class="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-violet-950/5">
+          <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-[10px] text-violet-400 flex items-center gap-3">
+            <span>📢</span> Reportes
           </h2>
-          <a href="/admin/reportes" class="text-[10px] text-yellow-600 hover:text-yellow-500 font-rpg uppercase tracking-widest transition underline decoration-yellow-900/30 underline-offset-4">Gestionar Reportes →</a>
+          <a href="/admin/reportes" class="text-[9px] text-stone-500 hover:text-violet-400 font-rpg uppercase tracking-widest transition-all font-bold group">Ver todos <span class="inline-block group-hover:translate-x-1 transition-transform">→</span></a>
         </div>
-        <div class="flex-1 max-h-[350px] overflow-y-auto p-4 space-y-3">
-            ${reportsList.length === 0 ? `<p class="py-12 text-center text-stone-600 text-xs italic">No hay reportes recientes</p>` : 
+        <div class="flex-1 max-h-[400px] overflow-y-auto p-8 space-y-4">
+            ${reportsList.length === 0 ? `<div class="py-20 text-center text-stone-700 text-[10px] font-rpg uppercase tracking-widest italic font-bold">Sin reportes</div>` : 
               reportsList.map(r => `
-              <div class="px-5 py-3 bg-stone-950/30 rounded-xl border border-yellow-900/5 hover:border-yellow-900/10 transition">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-xs font-bold text-yellow-500 font-rpg uppercase tracking-wider">${esc(r.username)}</span>
-                  <span class="text-[9px] text-stone-600 font-mono italic">${r.created_at.slice(5, 16).replace('T', ' ')}</span>
+              <div class="px-6 py-4 bg-black/40 rounded-2xl border border-white/5 hover:border-violet-500/20 transition-all group">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold text-violet-400 font-rpg uppercase tracking-widest">${esc(r.username)}</span>
+                  <span class="text-[9px] text-stone-700 font-mono font-bold uppercase tracking-tighter">${r.created_at.slice(5, 16).replace('T', ' ')}</span>
                 </div>
-                <p class="text-stone-300 text-xs leading-relaxed italic border-l-2 border-yellow-900/20 pl-3 ml-1">${esc(r.reason)}</p>
+                <p class="text-stone-400 text-xs leading-relaxed font-subtitle italic border-l-2 border-violet-500/20 pl-4 ml-1">${esc(r.reason)}</p>
               </div>
             `).join("")}
         </div>
@@ -91,55 +92,70 @@ dashboard.get("/", async (c) => {
   }
 
   const guideRows = guides.length === 0
-      ? `<tr><td colspan="4" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">No hay guías aún</td></tr>`
+      ? `<tr><td colspan="4" class="py-20 text-center text-stone-700 text-[10px] font-rpg uppercase tracking-widest italic">Biblioteca vacía</td></tr>`
       : guides.map((g) => `
-      <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
-        <td class="py-4 px-6 font-bold text-stone-200">${esc(g.title)}</td>
-        <td class="py-4 px-6 text-stone-500 font-rpg text-xs uppercase tracking-widest">${esc(g.author)}</td>
-        <td class="py-4 px-6">
-          <span class="inline-block text-[10px] px-2 py-0.5 rounded border font-rpg uppercase tracking-widest ${g.published ? "border-green-800/50 text-green-400 bg-green-950/20" : "border-stone-700 text-stone-500 bg-stone-900/20"}">
-            ${g.published ? "Publicada" : "Borrador"}
+      <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+        <td class="py-5 px-8 font-bold text-stone-200 font-rpg tracking-widest text-sm uppercase">${esc(g.title)}</td>
+        <td class="py-5 px-6 text-stone-500 font-rpg text-[10px] uppercase tracking-widest font-bold">${esc(g.author)}</td>
+        <td class="py-5 px-6">
+          <span class="inline-flex items-center gap-2 text-[9px] font-bold px-3 py-1 rounded-full border font-rpg uppercase tracking-widest ${g.published ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-stone-800 text-stone-600 bg-black/20"}">
+            <span class="w-1 h-1 rounded-full ${g.published ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,1)]' : 'bg-stone-700'}"></span>
+            ${g.published ? "Activo" : "Pendiente"}
           </span>
         </td>
-        <td class="py-4 px-6 text-stone-600 font-mono text-xs">${g.created_at.slice(0, 10)}</td>
+        <td class="py-5 px-6 text-stone-700 font-mono text-[10px] font-bold tracking-tighter">${g.created_at.slice(0, 10)}</td>
       </tr>`).join("");
 
   const content = `
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">📈</div>
-        <p class="text-stone-500 text-xs uppercase font-rpg tracking-[0.2em] mb-2 italic">EXP Ganada Hoy</p>
-        <p class="text-4xl font-bold text-yellow-600 font-rpg">${Number(todayExp).toLocaleString()}</p>
+    <!-- MAIN KPI -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+      <div class="glass-panel p-8 relative overflow-hidden group hover:border-violet-500/20 transition-all duration-500">
+        <div class="absolute -right-8 -top-8 text-9xl opacity-[0.03] rotate-12 group-hover:rotate-0 transition-transform duration-700 pointer-events-none">📈</div>
+        <p class="text-stone-600 text-[9px] uppercase font-rpg tracking-[0.4em] mb-3 font-bold">EXP de hoy</p>
+        <div class="flex items-baseline gap-2">
+          <span class="text-5xl font-bold text-white font-rpg tracking-tighter">${Number(todayExp).toLocaleString()}</span>
+          <span class="text-violet-500/50 font-rpg text-[10px] uppercase font-bold tracking-widest">EXP</span>
+        </div>
       </div>
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">⚔️</div>
-        <p class="text-stone-500 text-xs uppercase font-rpg tracking-[0.2em] mb-2 italic">Evento Activo</p>
-        <p class="text-lg font-bold text-purple-400 font-rpg leading-snug mt-1 uppercase tracking-wider">${eventLabel.split("—")[0].trim()}</p>
+
+      <div class="glass-panel p-8 relative overflow-hidden group hover:border-cyan-500/20 transition-all duration-500">
+        <div class="absolute -right-8 -top-8 text-9xl opacity-[0.03] rotate-12 group-hover:rotate-0 transition-transform duration-700 pointer-events-none">⚔️</div>
+        <p class="text-stone-600 text-[9px] uppercase font-rpg tracking-[0.4em] mb-3 font-bold">Evento</p>
+        <p class="text-xl font-bold text-cyan-400 font-rpg tracking-wider uppercase leading-tight drop-shadow-[0_0_15px_rgba(6,182,212,0.3)]">${eventLabel.split(/[—–-]/)[0].trim()}</p>
       </div>
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">📜</div>
-        <p class="text-stone-500 text-xs uppercase font-rpg tracking-[0.2em] mb-2 italic">En Whitelist</p>
-        <p class="text-4xl font-bold text-stone-200 font-rpg">${wlCount}</p>
+
+      <div class="glass-panel p-8 relative overflow-hidden group hover:border-orange-500/20 transition-all duration-500">
+        <div class="absolute -right-8 -top-8 text-9xl opacity-[0.03] rotate-12 group-hover:rotate-0 transition-transform duration-700 pointer-events-none">🛡️</div>
+        <p class="text-stone-600 text-[9px] uppercase font-rpg tracking-[0.4em] mb-3 font-bold">Whitelist</p>
+        <div class="flex items-baseline gap-2">
+          <span class="text-5xl font-bold text-white font-rpg tracking-tighter">${wlCount}</span>
+          <span class="text-orange-500/50 font-rpg text-[10px] uppercase font-bold tracking-widest">Activos</span>
+        </div>
       </div>
     </div>
 
+    <!-- ADMIN SECTIONS -->
     ${adminSections}
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
-      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">📜 Últimas Guías</h2>
+    <!-- GUIDES LIST -->
+    <div class="glass-panel overflow-hidden">
+      <div class="px-10 py-8 border-b border-white/5 flex items-center justify-between bg-black/20">
+        <div class="flex items-center gap-4">
+          <div class="w-1.5 h-6 bg-violet-600 rounded-full shadow-[0_0_10px_rgba(139,92,246,1)]"></div>
+          <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-[11px] text-white">Pergaminos</h2>
+        </div>
         <a href="/admin/guias/nueva"
-          class="text-[10px] bg-yellow-700 hover:bg-yellow-600 text-stone-950 px-4 py-2 rounded-lg transition font-rpg font-bold uppercase tracking-widest shadow-lg shadow-yellow-950/20 active:scale-95">
-          + Nueva Guía
+          class="text-[10px] btn-primary px-6 py-3 rounded-xl transition-all duration-300 font-rpg font-bold uppercase tracking-[0.2em]">
+          + Nuevo Pergamino
         </a>
       </div>
       <table class="w-full">
         <thead>
-          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Título</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Autor</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Estado</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Fecha</th>
+          <tr class="text-[9px] text-stone-700 uppercase font-rpg tracking-[0.4em] bg-white/5 border-b border-white/5">
+            <th class="py-5 px-8 text-left">Título</th>
+            <th class="py-5 px-6 text-left">Autor</th>
+            <th class="py-5 px-6 text-left">Estado</th>
+            <th class="py-5 px-6 text-left">Fecha</th>
           </tr>
         </thead>
         <tbody>${guideRows}</tbody>
@@ -147,7 +163,7 @@ dashboard.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(adminLayout("Dashboard", content, user, c.req.path));
+  return c.html(adminLayout("Dashboard Administrativo", content, user, c.req.path));
 });
 
 export default dashboard;

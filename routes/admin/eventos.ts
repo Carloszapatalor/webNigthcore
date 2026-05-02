@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
-import { adminLayout } from "../../views/layout.ts";
+import { adminLayout, esc } from "../../views/layout.ts";
 
 function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
@@ -51,13 +51,13 @@ eventos.get("/", async (c) => {
 
   const catalogCards = CATALOG.map(
     (group) => `
-    <div class="bg-stone-900/60 border border-yellow-900/10 rounded-2xl p-6 shadow-lg">
-      <h3 class="font-bold font-rpg uppercase tracking-[0.2em] text-[10px] text-stone-500 mb-4 border-b border-yellow-900/10 pb-2">${group.title}</h3>
+    <div class="glass-panel p-6 shadow-lg hover:border-violet-500/30 transition-all duration-300 group">
+      <h3 class="font-bold font-rpg uppercase tracking-[0.2em] text-[10px] text-stone-500 mb-4 border-b border-white/5 pb-2 group-hover:text-violet-400 transition-colors">${group.title}</h3>
       <div class="space-y-3">
         ${group.items
           .map(
             (i) =>
-              `<p class="text-xs text-stone-300 font-rpg tracking-wider">${i.label.split("—")[0].trim()}</p>`
+              `<p class="text-[10px] text-stone-400 font-rpg tracking-[0.2em] uppercase font-bold">${i.label.split("—")[0].trim()}</p>`
           )
           .join("")}
       </div>
@@ -67,43 +67,46 @@ eventos.get("/", async (c) => {
   const eventPanel = event
     ? `<div class="flex flex-col md:flex-row items-center justify-between gap-6">
          <div class="text-center md:text-left">
-           <span class="inline-block text-[10px] font-rpg font-bold text-yellow-600 uppercase tracking-[0.3em] mb-2 px-2 py-1 bg-yellow-900/10 rounded border border-yellow-900/20">${event.category}</span>
-           <p class="text-2xl font-bold text-white font-rpg uppercase tracking-widest leading-relaxed">${event.label.split("—")[0].trim()}</p>
-           <p class="text-[10px] text-stone-500 font-rpg uppercase mt-2 tracking-widest italic">Sorteado a las ${event.selected_at} UTC</p>
+           <span class="inline-block text-[10px] font-rpg font-bold text-violet-400 uppercase tracking-[0.3em] mb-2 px-3 py-1 bg-violet-600/10 rounded-lg border border-violet-500/30 shadow-[0_0_15px_rgba(139,92,246,0.1)]">${event.category}</span>
+           <p class="text-2xl font-bold text-white font-rpg uppercase tracking-widest leading-relaxed drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">${event.label.split("—")[0].trim()}</p>
+           <p class="text-[10px] text-stone-600 font-rpg uppercase mt-2 tracking-widest italic font-bold">Sorteado a las ${event.selected_at} UTC</p>
          </div>
          ${user.role !== "escudero" ? `
          <form method="POST" action="/admin/eventos/sortear">
            <button type="submit"
-             class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg active:scale-95 whitespace-nowrap"
+             class="btn-primary text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl shadow-xl active:scale-95 whitespace-nowrap"
              onclick="return confirm('¿Forzar nuevo sorteo?')">
              🎲 Nuevo sorteo
            </button>
          </form>` : ""}
        </div>`
     : `<div class="flex flex-col md:flex-row items-center justify-between gap-6">
-         <p class="text-stone-500 font-rpg uppercase tracking-widest text-xs italic">No hay un evento activo para hoy todavía...</p>
+         <p class="text-stone-600 font-rpg uppercase tracking-widest text-[10px] italic font-bold">No hay un evento activo para hoy todavía...</p>
          ${user.role !== "escudero" ? `
          <form method="POST" action="/admin/eventos/sortear">
            <button type="submit"
-             class="bg-purple-700 hover:bg-purple-600 text-white text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-lg shadow-purple-950/20 active:scale-95">
+             class="btn-primary text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl shadow-xl active:scale-95">
              🎲 Lanzar Dados
            </button>
          </form>` : ""}
        </div>`;
 
   const content = `
-    ${ok ? `<div class="bg-green-900/20 border border-green-800/50 text-green-400 text-xs rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest">✓ Sorteo realizado por mandato divino</div>` : ""}
+    ${ok ? `<div class="bg-violet-600/10 border border-violet-500/30 text-violet-400 text-[10px] rounded-xl px-6 py-4 mb-8 font-rpg uppercase tracking-[0.2em] font-bold shadow-lg animate-fade-in">✓ Sorteo realizado por mandato divino</div>` : ""}
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-10 mb-12 shadow-xl relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🎲</div>
-      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-8 pb-4 border-b border-yellow-900/10">🎲 Evento del Día — ${today}</h2>
+    <div class="glass-panel p-10 mb-12 relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none rotate-12">🎲</div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-[11px] text-white mb-8 pb-4 border-b border-white/5 flex items-center gap-4">
+        <span class="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,1)]"></span>
+        Evento del Día — ${today}
+      </h2>
       ${eventPanel}
     </div>
 
     <div class="flex items-center gap-4 mb-8">
-      <div class="h-px flex-1 bg-yellow-900/20"></div>
-      <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-xs text-stone-500 italic">Catálogo de Posibilidades</h2>
-      <div class="h-px flex-1 bg-yellow-900/20"></div>
+      <div class="h-px flex-1 bg-white/5"></div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.4em] text-[9px] text-stone-600 italic">Catálogo de Posibilidades</h2>
+      <div class="h-px flex-1 bg-white/5"></div>
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">${catalogCards}</div>

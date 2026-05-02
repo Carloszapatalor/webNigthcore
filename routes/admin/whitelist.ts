@@ -17,19 +17,19 @@ whitelist.get("/", async (c) => {
 
   const rows =
     list.length === 0
-      ? `<tr><td colspan="4" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">La biblioteca de exenciones está vacía</td></tr>`
+      ? `<tr><td colspan="4" class="py-20 text-center text-stone-700 text-[10px] italic font-rpg uppercase tracking-[0.5em]">La biblioteca de exenciones está vacía</td></tr>`
       : list
           .map(
             (r) => `
-      <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
-        <td class="py-4 px-6 font-bold text-stone-200">${esc(r.username)}</td>
-        <td class="py-4 px-6 text-stone-400 italic">${r.reason ? esc(r.reason) : "—"}</td>
-        <td class="py-4 px-6 text-stone-600 font-mono text-xs">${r.added_at}</td>
-        <td class="py-4 px-6 text-right">
+      <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+        <td class="py-5 px-8 font-bold text-stone-200 font-rpg tracking-widest text-sm uppercase">${esc(r.username)}</td>
+        <td class="py-5 px-6 text-stone-500 italic font-subtitle text-sm">${r.reason ? esc(r.reason) : "—"}</td>
+        <td class="py-5 px-6 text-stone-700 font-mono text-[10px] font-bold tracking-tighter">${r.added_at}</td>
+        <td class="py-5 px-8 text-right">
           ${!isEscudero ? `
           <form method="POST" action="/admin/whitelist/quitar">
             <input type="hidden" name="username" value="${esc(r.username)}" />
-            <button type="submit" class="text-[10px] font-rpg uppercase tracking-widest text-red-400 hover:text-red-300 transition">Quitar</button>
+            <button type="submit" class="text-[9px] font-rpg font-bold uppercase tracking-[0.3em] text-red-500/70 hover:text-red-400 transition-all">Quitar</button>
           </form>
           ` : ""}
         </td>
@@ -41,42 +41,50 @@ whitelist.get("/", async (c) => {
   const ok = c.req.query("ok");
 
   const content = `
-    ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">${esc(error)}</div>` : ""}
-    ${ok ? `<div class="bg-green-900/20 border border-green-800/50 text-green-400 text-xs rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">✓ Pergamino actualizado correctamente</div>` : ""}
+    ${error ? `<div class="bg-red-600/10 border border-red-500/30 text-red-400 text-[10px] rounded-xl px-6 py-4 mb-8 font-rpg uppercase tracking-[0.2em] font-bold shadow-lg animate-fade-in">${esc(error)}</div>` : ""}
+    ${ok ? `<div class="bg-violet-600/10 border border-violet-500/30 text-violet-400 text-[10px] rounded-xl px-6 py-4 mb-8 font-rpg uppercase tracking-[0.2em] font-bold shadow-lg animate-fade-in">✓ Registro actualizado correctamente</div>` : ""}
 
     ${!isEscudero ? `
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 mb-10 shadow-xl relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🛡️</div>
-      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6">🛡️ Otorgar Inmunidad</h2>
+    <div class="glass-panel p-10 mb-12 relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none rotate-12">🛡️</div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-[11px] text-white mb-8 pb-4 border-b border-white/5 flex items-center gap-4">
+        <span class="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_10px_rgba(245,158,11,1)]"></span>
+        Otorgar Inmunidad
+      </h2>
       <form method="POST" action="/admin/whitelist/anadir" class="flex flex-col sm:flex-row gap-4">
         <input name="username" type="text" placeholder="Nombre del guerrero" required
-          class="flex-1 bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg tracking-widest uppercase" />
+          class="flex-1 bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-widest uppercase" />
         <input name="reason" type="text" placeholder="Motivo de la exención"
-          class="flex-1 bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg tracking-widest uppercase" />
+          class="flex-1 bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-widest uppercase" />
         <button type="submit"
-          class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition whitespace-nowrap shadow-lg active:scale-95">
+          class="btn-primary text-[11px] font-bold font-rpg uppercase tracking-widest px-10 py-3 rounded-xl shadow-xl active:scale-95 whitespace-nowrap">
           Otorgar
         </button>
       </form>
     </div>
     ` : ""}
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
-      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">📜 Exentos de Inactividad</h2>
-        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">${list.length} guerreros</span>
+    <div class="glass-panel overflow-hidden">
+      <div class="px-10 py-8 border-b border-white/5 flex items-center justify-between bg-black/20">
+        <div class="flex items-center gap-4">
+          <div class="w-1.5 h-6 bg-orange-600 rounded-full shadow-[0_0_10px_rgba(245,158,11,1)]"></div>
+          <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-sm text-white">Exentos de Inactividad</h2>
+        </div>
+        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-[0.2em] font-bold bg-black/40 px-3 py-1 rounded-full">${list.length} Registros</span>
       </div>
-      <table class="w-full">
-        <thead>
-          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Jugador</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Motivo</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Fecha</th>
-            <th class="py-4 px-6"></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-[9px] text-stone-600 uppercase font-rpg tracking-[0.4em] bg-white/5 border-b border-white/5">
+              <th class="py-6 px-8 text-left">Jugador</th>
+              <th class="py-6 px-6 text-left">Motivo</th>
+              <th class="py-6 px-6 text-left">Fecha</th>
+              <th class="py-6 px-8"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 

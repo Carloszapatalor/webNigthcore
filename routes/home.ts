@@ -39,18 +39,25 @@ async function updateHomeCache() {
     const today = getTodayUTC();
     const ranking: Record<string, { combat: number; skilling: number; total: number }> = {};
     const resLogs = await fetch(`https://query.idleclans.com/api/Clan/logs/clan/${encodeURIComponent(clanName)}?skip=0&limit=100`);
-    const logs: ClanLog[] = await resLogs.json();
-    
+    if (!resLogs.ok) throw new Error(`API Logs returned ${resLogs.status}`);
+    const logsText = await resLogs.text();
+    let logs: ClanLog[];
+    try {
+      logs = JSON.parse(logsText);
+    } catch {
+      throw new Error("Invalid JSON in logs response");
+    }
+
     for (const log of logs) {
       if (log.timestamp.slice(0, 10) !== today) continue;
-      
+
       const combatMatch = log.message.match(/^(.+?) completed a daily combat quest/);
       const skillingMatch = log.message.match(/^(.+?) completed a skilling quest/);
-      
+
       if (combatMatch || skillingMatch) {
         const user = combatMatch ? combatMatch[1] : skillingMatch![1];
         if (!ranking[user]) ranking[user] = { combat: 0, skilling: 0, total: 0 };
-        
+
         if (combatMatch) ranking[user].combat++;
         else ranking[user].skilling++;
         ranking[user].total++;
@@ -65,7 +72,14 @@ async function updateHomeCache() {
 
   try {
     const clanRes = await fetch(`https://query.idleclans.com/api/Clan/recruitment/${encodeURIComponent(clanName)}`);
-    const clanData = await clanRes.json();
+    if (!clanRes.ok) throw new Error(`API Recruitment returned ${clanRes.status}`);
+    const clanText = await clanRes.text();
+    let clanData;
+    try {
+      clanData = JSON.parse(clanText);
+    } catch {
+      throw new Error("Invalid JSON in recruitment response");
+    }
     if (clanData.serializedSkills) {
       cachedClanStats = JSON.parse(clanData.serializedSkills);
     }
@@ -83,13 +97,11 @@ home.get("/", async (c) => {
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
-  // Renovar caché si ha expirado (o si es la primera vez)
-  // No bloqueamos la petición actual si ya tenemos algo de caché, lo actualizamos de fondo
   if (Date.now() - lastCacheUpdate > CACHE_TTL) {
     if (lastCacheUpdate === 0) {
-      await updateHomeCache(); // Primera vez: bloqueamos para tener datos
+      await updateHomeCache();
     } else {
-      updateHomeCache(); // Actualización perezosa (lazy) en segundo plano
+      updateHomeCache();
     }
   }
 
@@ -117,12 +129,12 @@ home.get("/", async (c) => {
 
   type RpgRow = { username: string; week_exp: number; title: string; level: number };
   const ranking = rankingResult.status === "fulfilled" ? (rankingResult.value.rows as unknown as RpgRow[]) : [];
-  
+
   const rawEventLabel = eventResult.status === "fulfilled" && eventResult.value.rows.length > 0 ? (eventResult.value.rows[0] as unknown as { label: string }).label : null;
   const eventLabel = rawEventLabel ? rawEventLabel.split(/[—–-]/)[0].trim() : null;
   const memberCount = membersResult.status === "fulfilled" ? (membersResult.value.rows[0] as unknown as { cnt: number }).cnt : "—";
   const onlineList = onlineResult.status === "fulfilled" ? (onlineResult.value.rows as unknown as { member_name: string }[]) : [];
-  
+
   type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
   const guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as unknown as GuideRow[]) : [];
 
@@ -130,275 +142,278 @@ home.get("/", async (c) => {
   const clanStats = cachedClanStats;
 
   const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
+  const neonMedals = [
+    "shadow-[0_0_15px_rgba(250,204,21,0.4)] text-yellow-400",
+    "shadow-[0_0_15px_rgba(226,232,240,0.3)] text-slate-300",
+    "shadow-[0_0_15px_rgba(217,119,6,0.3)] text-amber-600",
+    "text-stone-500",
+    "text-stone-500"
+  ];
 
   const rankingRows =
     ranking.length === 0
-      ? `<tr><td colspan="4" class="py-8 text-center text-stone-600 text-sm italic">Sin datos esta semana</td></tr>`
+      ? `<tr><td colspan="4" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-[0.3em]">Sin datos del frente</td></tr>`
       : ranking
-          .map(
-            (r, i) => `
-      <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition">
-        <td class="py-4 px-4 font-bold text-stone-200 text-base">
-          <span class="mr-3">${medals[i]}</span>${esc(r.username)}
-        </td>
-        <td class="py-4 px-4">
-          <div class="flex items-center gap-2">
-             <span class="text-[10px] font-rpg tracking-widest text-yellow-600 uppercase">Nv. ${r.level}</span>
+        .map(
+          (r, i) => `
+      <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+        <td class="py-5 px-6 font-bold">
+          <div class="flex items-center gap-4">
+            <span class="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center text-sm border border-white/10 ${neonMedals[i]} font-rpg">${i + 1}</span>
+            <span class="text-white text-base tracking-wide">${esc(r.username)}</span>
           </div>
         </td>
-        <td class="py-4 px-4">
-          <span class="text-[10px] font-rpg tracking-widest text-stone-400 uppercase">${esc(r.title)}</span>
+        <td class="py-5 px-6">
+          <div class="inline-flex items-center gap-2 px-3 py-1 bg-violet-600/10 border border-violet-500/20 rounded-full text-[10px] font-rpg tracking-widest text-violet-400 uppercase">
+             Lv. ${r.level}
+          </div>
         </td>
-        <td class="py-4 px-4 text-right font-rpg text-yellow-500 font-bold tracking-wider">
-          ${Number(r.week_exp).toLocaleString()} EXP
+        <td class="py-5 px-6">
+          <span class="text-[10px] font-subtitle tracking-widest text-stone-500 uppercase">${esc(r.title)}</span>
+        </td>
+        <td class="py-5 px-6 text-right">
+          <span class="font-rpg text-sm font-bold text-violet-400 drop-shadow-[0_0_10px_rgba(139,92,246,0.3)]">
+            ${Number(r.week_exp).toLocaleString()} <span class="text-[10px] opacity-50">EXP</span>
+          </span>
         </td>
       </tr>`
-          )
-          .join("");
+        )
+        .join("");
 
   const questsRows = quests.length === 0
-    ? `<div class="py-12 text-center text-stone-600 text-sm italic">Nadie ha completado misiones hoy</div>`
+    ? `<div class="py-12 text-center text-stone-600 text-sm italic font-rpg tracking-[0.2em] uppercase">Misiones no reportadas</div>`
     : quests.map(([user, counts], i) => `
-      <div class="flex items-center justify-between p-4 bg-stone-950/40 rounded-xl border border-yellow-900/10 hover:border-yellow-900/30 transition">
-        <div class="flex items-center gap-3">
-          <span class="text-lg">${medals[i]}</span>
-          <span class="font-bold text-stone-200">${esc(user)}</span>
+      <div class="group p-5 bg-[#161821]/40 rounded-2xl border border-white/5 hover:border-violet-500/30 transition-all duration-300 hover:shadow-[0_0_25px_rgba(139,92,246,0.1)]">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full ${i < 3 ? 'bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,1)]' : 'bg-stone-700'}"></div>
+            <span class="font-bold text-white text-base font-rpg tracking-wider">${esc(user)}</span>
+          </div>
+          <span class="text-[10px] font-rpg text-stone-500 uppercase">Rango ${i + 1}</span>
         </div>
-        <div class="flex gap-4 font-rpg text-[10px] tracking-widest">
-          <div class="text-red-400 flex flex-col items-center">
-             <span class="text-xs font-bold">${counts.combat}</span>
-             <span class="uppercase opacity-70">Combate</span>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-black/20 rounded-xl p-2 border border-white/5 text-center">
+             <span class="block text-xs font-bold text-red-400 font-rpg">${counts.combat}</span>
+             <span class="text-[8px] uppercase tracking-tighter text-stone-600 font-subtitle">Combate</span>
           </div>
-          <div class="text-green-400 flex flex-col items-center">
-             <span class="text-xs font-bold">${counts.skilling}</span>
-             <span class="uppercase opacity-70">Habilidad</span>
+          <div class="bg-black/20 rounded-xl p-2 border border-white/5 text-center">
+             <span class="block text-xs font-bold text-green-400 font-rpg">${counts.skilling}</span>
+             <span class="text-[8px] uppercase tracking-tighter text-stone-600 font-subtitle">Skill</span>
           </div>
-          <div class="text-yellow-500 flex flex-col items-center border-l border-yellow-900/30 pl-4 ml-2">
-             <span class="text-sm font-bold">${counts.total}</span>
-             <span class="uppercase opacity-70">Total</span>
+          <div class="bg-violet-600/10 rounded-xl p-2 border border-violet-500/20 text-center">
+             <span class="block text-xs font-bold text-violet-400 font-rpg">${counts.total}</span>
+             <span class="text-[8px] uppercase tracking-tighter text-violet-500/50 font-subtitle">Total</span>
           </div>
         </div>
       </div>
     `).join("");
 
-  // Array of specific skills we want to display
   const targetSkills = ["Woodcutting", "Mining", "Fishing", "Farming", "Smithing", "Cooking"];
-  
-  // Transform standard Idle Clans stats format to something nicer
   const skillIcons: Record<string, string> = {
-    Woodcutting: "🪓",
-    Mining: "⛏️",
-    Fishing: "🎣",
-    Farming: "🌾",
-    Smithing: "🔨",
-    Cooking: "🍳",
-    Melee: "⚔️",
-    Archery: "🏹",
-    Magic: "🔮"
+    Woodcutting: "🪓", Mining: "⛏️", Fishing: "🎣", Farming: "🌾", Smithing: "🔨", Cooking: "🍳"
+  };
+  const skillColors: Record<string, string> = {
+    Woodcutting: "text-orange-400", Mining: "text-cyan-400", Fishing: "text-blue-400",
+    Farming: "text-green-400", Smithing: "text-slate-400", Cooking: "text-red-400"
   };
 
   const specialtiesCards = targetSkills.map(skill => {
     const level = clanStats[skill] || 0;
-    const isMaxed = level >= 120; // Assume 120 is max for visual emphasis
     const icon = skillIcons[skill] || "⭐";
-    
+    const color = skillColors[skill] || "text-violet-400";
+
     return `
-      <div class="bg-stone-900/40 border border-yellow-900/10 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-stone-800/40 hover:border-yellow-900/30 transition group">
-        <div class="text-3xl mb-2 group-hover:scale-110 transition duration-300">${icon}</div>
-        <p class="text-[10px] font-rpg uppercase tracking-widest text-stone-500 mb-1">${skill}</p>
-        <p class="font-rpg text-lg font-bold text-yellow-500">
+      <div class="bg-[#11131A]/60 border border-white/5 rounded-2xl p-5 flex flex-col items-center justify-center text-center hover:bg-white/5 hover:border-white/10 transition-all duration-300 group">
+        <div class="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${icon}</div>
+        <p class="text-[9px] font-rpg uppercase tracking-[0.2em] text-stone-500 mb-1 font-bold">${skill}</p>
+        <p class="font-rpg text-xl font-bold ${color} drop-shadow-[0_0_8px_currentColor]">
           ${formatClanValue(level)}
         </p>
       </div>
     `;
   }).join("");
 
-  const onlineBadges = onlineList.length === 0
-    ? `<p class="text-stone-600 text-sm italic py-2">No hay miembros en línea detectados (Actualizado cada hora)</p>`
-    : onlineList.map(m => `
-      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-950/30 text-green-400 border border-green-900/50 rounded-full text-xs font-rpg tracking-wider shadow-[0_0_10px_rgba(34,197,94,0.1)]">
-        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-        ${esc(m.member_name)}
-      </span>
-    `).join("");
-
   const content = `
-    <!-- HEADER INTRO -->
-    <div class="mb-16 text-center max-w-3xl mx-auto">
-      <h2 class="text-5xl font-bold text-yellow-500 mb-4 font-rpg tracking-[0.2em] drop-shadow-lg">Castillo Nightcore</h2>
-      <p class="text-stone-400 text-lg leading-relaxed italic">
-        "En la oscuridad forjamos nuestro legado. La lealtad es nuestra armadura, la persistencia nuestra espada."
-      </p>
+    <!-- HERO SECTION -->
+    <div class="mb-20 relative">
+      <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-full bg-violet-600/5 blur-[120px] -z-10"></div>
+      <div class="text-center space-y-6">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-violet-600/10 border border-violet-500/20 rounded-full text-[10px] font-rpg tracking-[0.4em] text-violet-400 uppercase font-bold mb-4 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
+          <span class="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,1)]"></span>
+          Clan Nightcore
+        </div>
+        <h2 class="text-6xl md:text-8xl font-bold text-white font-rpg tracking-tighter leading-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">NIGHTCORE</h2>
+        <p class="text-stone-500 font-subtitle text-lg max-w-2xl mx-auto leading-relaxed">
+          "En la oscuridad forjamos nuestro legado. La lealtad es nuestra armadura, la persistencia nuestra espada." 
+      </div>
     </div>
 
-    <!-- MAIN METRICS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">👥</div>
-        <p class="text-stone-500 text-xs uppercase font-rpg tracking-[0.2em] mb-2 font-bold">Fuerza del Clan</p>
-        <p class="text-5xl font-bold text-stone-200 font-rpg">${memberCount} <span class="text-lg text-stone-600 tracking-widest uppercase">Miembros</span></p>
+    <!-- KPI GRID -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+      <div class="bg-[#11131A]/60 border border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group hover:border-violet-500/30 transition-all duration-500">
+        <div class="absolute -right-8 -top-8 text-9xl opacity-[0.03] rotate-12 group-hover:scale-110 transition-transform duration-700">👥</div>
+        <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-[0.3em] mb-3 font-bold">Miembros</p>
+        <div class="flex items-baseline gap-3">
+          <span class="text-6xl font-bold text-white font-rpg tracking-tighter">${memberCount}</span>
+          <span class="text-stone-600 font-rpg text-xs uppercase tracking-widest">Guerreros</span>
+        </div>
       </div>
       
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">⚔️</div>
-        <p class="text-stone-500 text-xs uppercase font-rpg tracking-[0.2em] mb-2 font-bold">Evento Activo Hoy</p>
-        ${eventLabel ? 
-          `<p class="text-xl font-bold text-purple-400 font-rpg leading-tight uppercase tracking-wider">${eventLabel}</p>` : 
-          `<p class="text-xl font-bold text-stone-600 font-rpg uppercase tracking-wider">Día de Descanso</p>`
-        }
+      <div class="bg-[#11131A]/60 border border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group hover:border-cyan-500/30 transition-all duration-500">
+        <div class="absolute -right-8 -top-8 text-9xl opacity-[0.03] rotate-12 group-hover:scale-110 transition-transform duration-700">🎯</div>
+        <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-[0.3em] mb-3 font-bold">Evento</p>
+        ${eventLabel ?
+      `<p class="text-2xl font-bold text-cyan-400 font-rpg tracking-wider leading-tight uppercase drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">${eventLabel}</p>` :
+      `<p class="text-2xl font-bold text-stone-600 font-rpg uppercase tracking-widest">Estado: Standby</p>`
+    }
       </div>
 
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-        <div class="absolute -right-4 -top-4 text-6xl opacity-5 group-hover:scale-110 transition duration-500">🏆</div>
-        <p class="text-stone-500 text-xs uppercase font-rpg tracking-[0.2em] mb-2 font-bold">Mejor del Día</p>
-        <p class="text-2xl font-bold text-yellow-600 font-rpg truncate">
+      <div class="bg-[#11131A]/60 border border-white/5 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden group hover:border-orange-500/30 transition-all duration-500">
+        <div class="absolute -right-8 -top-8 text-9xl opacity-[0.03] rotate-12 group-hover:scale-110 transition-transform duration-700">🏆</div>
+        <p class="text-stone-500 text-[10px] uppercase font-rpg tracking-[0.3em] mb-3 font-bold">Quests</p>
+        <p class="text-3xl font-bold text-orange-500 font-rpg tracking-tighter uppercase truncate drop-shadow-[0_0_15px_rgba(249,115,22,0.4)]">
           ${quests.length > 0 ? quests[0][0] : '—'}
         </p>
-        <p class="text-[10px] text-stone-500 uppercase tracking-widest font-rpg mt-1">
-          ${quests.length > 0 ? `${quests[0][1].total} Misiones Completadas` : ''}
+        <p class="text-[9px] text-stone-600 uppercase tracking-[0.2em] font-rpg font-bold mt-2">
+          MVP Quests Diarias
         </p>
       </div>
     </div>
 
-    <!-- SECCIÓN DE ESPECIALIDADES (CLAN STATS) -->
-    <div class="mb-12">
-      <div class="flex items-center gap-3 mb-6 px-2">
-        <span class="text-2xl">🎖️</span>
-        <h3 class="text-xl font-bold text-yellow-500 font-rpg uppercase tracking-widest">Especialidades del Clan</h3>
+    <!-- ESPECIALIDADES -->
+    <div class="mb-20">
+      <div class="flex items-center justify-between mb-10 px-4">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-1 h-1 rounded-full bg-violet-600"></div>
+          <h3 class="text-xl font-bold text-white font-rpg uppercase tracking-[0.3em]">Especialidades</h3>
+        </div>
+        <span class="text-[10px] font-rpg text-stone-600 uppercase tracking-widest">Métricas de Especialización</span>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
         ${specialtiesCards}
       </div>
     </div>
 
-    <!-- DUAL COLUMN LAYOUT -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-20">
       
-      <!-- LÍDERES DE EXPERIENCIA (Left Col - 7/12) -->
-      <div class="lg:col-span-7 bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-        <div class="px-8 py-6 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-          <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-yellow-500 flex items-center gap-3">
-            <span class="text-2xl">👑</span> Vanguardia Semanal
-          </h2>
-          <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest border border-yellow-900/20 px-2 py-1 rounded">Top 5 EXP</span>
+      <!-- LÍDERES DE EXPERIENCIA (Left - 2/3) -->
+      <div class="lg:col-span-2 space-y-8">
+        <div class="flex items-center justify-between px-4">
+          <h2 class="text-2xl font-bold text-white font-rpg uppercase tracking-[0.2em]">Top Ranking</h2>
+          <div class="px-3 py-1 bg-violet-900/20 border border-violet-500/20 rounded-lg text-[9px] font-rpg text-violet-400 uppercase font-bold">Top 5 Semanal</div>
         </div>
-        <div class="p-0 flex-1 flex flex-col justify-center">
-          <table class="w-full h-full">
-            <tbody class="divide-y divide-yellow-900/5">
+        
+        <div class="bg-[#11131A]/60 border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl">
+          <table class="w-full">
+            <thead class="bg-white/5 border-b border-white/5">
+              <tr class="text-[10px] text-stone-500 uppercase font-rpg tracking-[0.3em]">
+                <th class="py-5 px-8 text-left">Guerrero</th>
+                <th class="py-5 px-6 text-left">Nivel</th>
+                <th class="py-5 px-6 text-left">Título</th>
+                <th class="py-5 px-6 text-right">Potencia (EXP)</th>
+              </tr>
+            </thead>
+            <tbody>
               ${rankingRows}
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- LÍDERES DE MISIONES DIARIAS (Right Col - 5/12) -->
-      <div class="lg:col-span-5 bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-         <div class="px-6 py-6 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-          <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-yellow-500 flex items-center gap-3">
-            <span class="text-xl">📜</span> Misiones de Hoy
-          </h2>
-          <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest border border-yellow-900/20 px-2 py-1 rounded">Top 5</span>
+      <!-- MISIONES (Right - 1/3) -->
+      <div class="space-y-8">
+        <div class="flex items-center justify-between px-4">
+          <h2 class="text-2xl font-bold text-white font-rpg uppercase tracking-[0.2em]">Misiones completas</h2>
+          <span class="text-2xl">📜</span>
         </div>
-        <div class="p-4 flex flex-col gap-2 flex-1">
+        <div class="space-y-4">
           ${questsRows}
         </div>
       </div>
 
     </div>
 
-    <!-- ONLINE STATUS SECTION -->
-    <div class="bg-stone-900/40 border border-green-900/20 rounded-2xl p-6 shadow-lg mb-12 relative overflow-hidden">
-      <div class="absolute -right-4 -top-4 text-8xl opacity-[0.02] pointer-events-none">🟢</div>
-      <h3 class="text-sm font-bold text-green-500 font-rpg uppercase tracking-widest mb-4 flex items-center gap-2">
-        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        Guerreros en el Frente (0h Offline)
-      </h3>
-      <div class="flex flex-wrap gap-2">
-        ${onlineBadges}
-      </div>
-    </div>
-
-    <!-- BIBLIOTECA (GUÍAS) -->
+    <!-- BIBLIOTECA -->
     <div>
-      <div class="flex items-center justify-between mb-6 px-2">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">📚</span>
-          <h3 class="text-xl font-bold text-yellow-500 font-rpg uppercase tracking-widest">Biblioteca del Clan</h3>
+      <div class="flex items-center justify-between mb-12 px-4">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-1 h-1 rounded-full bg-violet-600 shadow-[0_0_10px_rgba(139,92,246,1)]"></div>
+          <h3 class="text-xl font-bold text-white font-rpg uppercase tracking-[0.3em]">Pergaminos</h3>
         </div>
-        <a href="/guias" class="text-xs text-stone-400 hover:text-yellow-500 transition font-rpg uppercase tracking-widest">Ver todos los pergaminos →</a>
+        <a href="/guias" class="text-[10px] text-stone-500 hover:text-violet-400 transition-all font-rpg uppercase tracking-[0.3em] group">
+          Explorar Archivos <span class="inline-block group-hover:translate-x-2 transition-transform">→</span>
+        </a>
       </div>
       
       <div class="grid grid-cols-1 gap-6">
         ${guides.map(g => {
-          let preview = g.content.replace(/<[^>]+>/g, '').slice(0, 150);
-          let icon = "📜";
-          let category = "Guía";
-          let imageHtml = `<div class="w-20 h-20 bg-stone-950/50 rounded-2xl border border-yellow-900/20 flex items-center justify-center text-4xl shadow-inner">📜</div>`;
-          let badgesHtml = "";
-          
-          if (g.content.startsWith('{')) {
-            try {
-              const data = JSON.parse(g.content);
-              preview = data.subtitle || data.description || "";
-              if (data.bossEmoji) icon = data.bossEmoji;
-              if (data.category) category = data.category;
-              
-              if (data.image) {
-                imageHtml = `<img src="${data.image}" class="w-20 h-20 object-contain rounded-2xl border border-yellow-900/20 shadow-lg" />`;
-              } else if (data.imageLink) {
-                imageHtml = `<img src="${data.imageLink}" class="w-20 h-20 object-contain rounded-2xl border border-yellow-900/20 shadow-lg" />`;
-              } else if (data.imageBase64) {
-                 imageHtml = `<img src="${data.imageBase64}" class="w-20 h-20 object-contain rounded-2xl border border-yellow-900/20 shadow-lg" />`;
-              } else if (data.bossEmoji) {
-                 imageHtml = `<div class="w-20 h-20 bg-stone-950/50 rounded-2xl border border-yellow-900/20 flex items-center justify-center text-4xl shadow-inner">${data.bossEmoji}</div>`;
-              }
+      let preview = g.content.replace(/<[^>]+>/g, '').slice(0, 150);
+      let icon = "📜";
+      let category = "Protocolo";
+      let imageHtml = `<div class="w-24 h-24 bg-stone-900/80 rounded-[1.5rem] border border-white/5 flex items-center justify-center text-4xl shadow-inner neon-border">📜</div>`;
+      let badgesHtml = "";
 
-              // Badges logic
-              const badges = [];
-              if (data.health) badges.push(`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-green-500/30 bg-green-500/10 text-green-400 text-[9px] font-bold"><span class="text-xs">❤️</span> VIDA: ${data.health}</span>`);
-              if (data.maxHit) badges.push(`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-red-500/30 bg-red-500/10 text-red-400 text-[9px] font-bold"><span class="text-xs">🥊</span> GOLPE MÁXIMO: ${data.maxHit}</span>`);
-              if (data.resistance) badges.push(`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-400 text-[9px] font-bold"><span class="text-xs">🛡️</span> RESISTENTE: ${data.resistance}</span>`);
-              if (data.requirement) badges.push(`<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-yellow-500/30 bg-yellow-500/10 text-yellow-400 text-[9px] font-bold"><span class="text-xs">🔑</span> ${data.requirement}</span>`);
-              
-              if (badges.length > 0) {
-                badgesHtml = `<div class="flex flex-wrap gap-2 mt-3">${badges.join('')}</div>`;
-              }
-            } catch {
-              // Fail safe
-            }
+      if (g.content.startsWith('{')) {
+        try {
+          const data = JSON.parse(g.content);
+          preview = data.subtitle || data.description || "";
+          if (data.bossEmoji) icon = data.bossEmoji;
+          if (data.category) category = data.category;
+
+          if (data.image || data.imageLink || data.imageBase64) {
+            const src = data.image || data.imageLink || data.imageBase64;
+            imageHtml = `<img src="${src}" class="w-24 h-24 object-contain rounded-[1.5rem] border border-white/5 shadow-2xl bg-black/40 p-2 neon-border" />`;
           }
 
-          return `
-          <a href="/guias/${g.slug}" class="bg-stone-900/60 border border-yellow-900/10 p-6 rounded-2xl hover:bg-stone-800/80 transition group block shadow-xl hover:shadow-yellow-900/10 relative overflow-hidden">
-            <div class="absolute w-1 h-full bg-yellow-700/30 left-0 top-0 group-hover:bg-yellow-500 transition"></div>
+          const badges = [];
+          if (data.health) badges.push(`<div class="flex flex-col items-center px-4 py-2 bg-black/40 border border-green-500/20 rounded-xl"><span class="text-green-500 text-[10px] font-rpg font-bold">HP</span><span class="text-white text-sm font-bold">${data.health}</span></div>`);
+          if (data.maxHit) badges.push(`<div class="flex flex-col items-center px-4 py-2 bg-black/40 border border-red-500/20 rounded-xl"><span class="text-red-500 text-[10px] font-rpg font-bold">GOLPE</span><span class="text-white text-sm font-bold">${data.maxHit}</span></div>`);
+          if (data.resistance) badges.push(`<div class="flex flex-col items-center px-4 py-2 bg-black/40 border border-purple-500/20 rounded-xl"><span class="text-purple-500 text-[10px] font-rpg font-bold">RES</span><span class="text-white text-sm font-bold truncate max-w-[60px]">${data.resistance}</span></div>`);
+
+          if (badges.length > 0) {
+            badgesHtml = `<div class="flex flex-wrap gap-3 mt-4">${badges.join('')}</div>`;
+          }
+        } catch { }
+      }
+
+      return `
+          <a href="/guias/${g.slug}" class="group bg-[#11131A]/40 border border-white/5 p-8 rounded-[2.5rem] hover:bg-white/5 hover:border-violet-500/30 transition-all duration-500 block relative overflow-hidden">
+            <div class="absolute -right-12 -bottom-12 text-[10rem] opacity-[0.02] group-hover:scale-110 transition-transform duration-700 pointer-events-none">${icon}</div>
             
-            <div class="flex items-center gap-6">
-              <div class="flex-shrink-0">
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-10">
+              <div class="flex-shrink-0 relative">
                 ${imageHtml}
+                <div class="absolute -inset-2 bg-violet-600/10 blur-xl rounded-full -z-10 group-hover:bg-violet-600/20 transition-all"></div>
               </div>
               
               <div class="flex-1 min-w-0">
-                <p class="text-[10px] font-rpg uppercase tracking-[0.2em] text-yellow-600/70 mb-1 font-bold">${category}</p>
-                <h4 class="text-xl font-bold text-stone-200 group-hover:text-yellow-400 transition font-rpg truncate">
+                <p class="text-[9px] font-rpg uppercase tracking-[0.4em] text-violet-500/70 mb-2 font-bold">${category}</p>
+                <h4 class="text-2xl font-bold text-white group-hover:text-violet-400 transition-all font-rpg tracking-wider">
                   ${icon} ${esc(g.title)}
                 </h4>
                 
-                ${badgesHtml}
+                ${badgesHtml || `<p class="text-stone-500 text-sm italic mt-3 font-subtitle line-clamp-1">${esc(preview)}</p>`}
                 
-                <div class="flex items-center gap-2 mt-4 text-[10px] font-rpg uppercase tracking-widest text-stone-500">
-                  <span>ESCRITO POR ${esc(g.author)}</span>
-                  <span class="opacity-30">•</span>
-                  <span>${g.created_at.slice(0, 10)}</span>
+                <div class="flex items-center gap-4 mt-6 text-[9px] font-rpg uppercase tracking-[0.2em] text-stone-600">
+                  <span class="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5"><span class="text-stone-400">Escrito por</span> <span class="text-stone-300 font-bold">${esc(g.author)}</span></span>
+                  <span class="font-bold">${g.created_at.slice(0, 10)}</span>
+                </div>
+              </div>
+              
+              <div class="hidden md:block">
+                <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-stone-600 group-hover:bg-violet-600 group-hover:text-white transition-all duration-300 border border-white/5">
+                  <span class="text-xl">→</span>
                 </div>
               </div>
             </div>
           </a>`;
-        }).join('')}
+    }).join('')}
       </div>
     </div>
   `;
 
-  return c.html(publicLayout("Portal", content));
+  return c.html(publicLayout("Home", content));
 });
 
 export default home;

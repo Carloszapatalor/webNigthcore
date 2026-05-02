@@ -13,12 +13,12 @@ export function esc(str: any): string {
 
 export function publicLayout(title: string, content: string, user?: User | null): string {
   const loginButton = user
-    ? `<a href="/admin" class="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-700 transition">
-        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+    ? `<a href="/admin" class="flex items-center gap-2 bg-stone-900/80 hover:bg-violet-900/30 text-violet-400 text-[10px] font-bold px-4 py-2 rounded-xl border border-violet-500/20 transition-all duration-300 font-rpg tracking-widest uppercase shadow-[0_0_15px_rgba(139,92,246,0.1)]">
+        <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse shadow-[0_0_8px_rgba(139,92,246,0.8)]"></span>
         <span>${esc(user.username)}</span>
       </a>`
     : `<a href="/auth/login"
-          class="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg border border-purple-500 transition shadow shadow-purple-900/40">
+          class="flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold px-5 py-2.5 rounded-xl border border-violet-400/30 transition-all duration-300 font-rpg tracking-[0.2em] uppercase shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] active:scale-95">
           ⚔️ Login
         </a>`;
 
@@ -27,57 +27,98 @@ export function publicLayout(title: string, content: string, user?: User | null)
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${esc(title)} — Clan Nightcore</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <title>${esc(title)} — Nightcore</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style type="text/tailwindcss">
     @layer base {
-      ::-webkit-scrollbar { @apply w-2; }
-      ::-webkit-scrollbar-track { @apply bg-stone-950; }
-      ::-webkit-scrollbar-thumb { @apply bg-stone-800 rounded-full hover:bg-stone-700 transition; }
-      h1, h2, h3, .font-rpg { font-family: 'Cinzel', serif; }
-      body { font-family: 'Merriweather', serif; }
+      ::-webkit-scrollbar { @apply w-1.5; }
+      ::-webkit-scrollbar-track { @apply bg-[#0B0D13]; }
+      ::-webkit-scrollbar-thumb { @apply bg-stone-800 rounded-full hover:bg-violet-600 transition; }
+      
+      body { 
+        @apply bg-[#0B0D13] text-stone-300 min-h-screen selection:bg-violet-500/40 overflow-x-hidden;
+        font-family: 'Inter', sans-serif;
+      }
+      
+      h1, h2, h3, .font-rpg { font-family: 'Orbitron', sans-serif; }
+      .font-subtitle { font-family: 'Exo 2', sans-serif; }
     }
-    .prose h1 { @apply text-3xl font-bold text-stone-100 mt-8 mb-4 font-rpg tracking-wider uppercase; }
-    .prose h2 { @apply text-2xl font-bold text-stone-200 mt-6 mb-3 font-rpg tracking-wider uppercase; }
-    .prose h3 { @apply text-xl font-semibold text-stone-300 mt-5 mb-2 font-rpg tracking-wider; }
-    .prose p  { @apply text-stone-300 mb-4 leading-relaxed text-base; }
-    .prose ul { @apply list-disc list-inside text-stone-300 mb-3 space-y-1; }
-    .prose ol { @apply list-decimal list-inside text-stone-300 mb-3 space-y-1; }
-    .prose code { @apply bg-stone-900 text-yellow-500 px-1.5 py-0.5 rounded border border-yellow-900/30 text-sm font-mono; }
-    .prose pre  { @apply bg-stone-900 border border-yellow-900/30 rounded-lg p-4 mb-3 overflow-x-auto shadow-inner; }
-    .prose pre code { @apply bg-transparent border-0 p-0 text-stone-300; }
-    .prose a { @apply text-yellow-500 hover:text-yellow-400 underline; }
-    .prose blockquote { @apply border-l-4 border-yellow-700 bg-stone-900/50 pl-4 py-2 pr-4 text-stone-400 italic my-3 rounded-r-lg; }
-    .prose hr { @apply border-yellow-900/30 my-6; }
-    .prose table { @apply w-full border-collapse text-sm mb-4; }
-    .prose th { @apply bg-stone-900 text-stone-300 px-3 py-2 text-left border border-yellow-900/30 font-rpg tracking-wider uppercase; }
-    .prose td { @apply text-stone-300 px-3 py-2 border border-yellow-900/30; }
+
+    .neon-border { @apply border border-white/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]; }
+    .neon-text-violet { @apply text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]; }
+    .neon-text-pink { @apply text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]; }
+    .neon-text-cyan { @apply text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]; }
+    .neon-text-green { @apply text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]; }
+    .neon-text-orange { @apply text-orange-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]; }
+    
+    .neon-glow-violet { @apply shadow-[0_0_30px_rgba(139,92,246,0.15)] border border-violet-500/20; }
+    .neon-glow-pink { @apply shadow-[0_0_30px_rgba(236,72,153,0.15)] border border-pink-500/20; }
+    .neon-glow-cyan { @apply shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/20; }
+    .neon-glow-green { @apply shadow-[0_0_30px_rgba(34,197,94,0.15)] border border-green-500/20; }
+    
+    .glass-panel { @apply bg-[#11131A]/60 backdrop-blur-2xl border border-white/5 shadow-2xl rounded-[2.5rem]; }
+    
+    .btn-primary { @apply bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all active:scale-95; }
+    .btn-secondary { @apply bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-95; }
+
+    .prose h1 { @apply text-3xl font-bold text-white mt-8 mb-6 font-rpg tracking-widest uppercase; }
+    .prose h2 { @apply text-2xl font-bold text-stone-100 mt-6 mb-4 font-rpg tracking-widest uppercase border-l-4 border-violet-600 pl-4; }
+    .prose h3 { @apply text-xl font-semibold text-violet-400 mt-5 mb-3 font-subtitle tracking-wider uppercase; }
+    .prose p  { @apply text-stone-400 mb-5 leading-relaxed text-base; }
+    .prose ul { @apply list-disc list-inside text-stone-400 mb-4 space-y-2; }
+    .prose ol { @apply list-decimal list-inside text-stone-400 mb-4 space-y-2; }
+    .prose code { @apply bg-stone-900 text-violet-400 px-2 py-1 rounded border border-violet-900/30 text-sm font-mono; }
+    .prose pre  { @apply bg-[#0B0D13] border border-white/5 rounded-2xl p-5 mb-5 overflow-x-auto shadow-inner; }
+    .prose a { @apply text-violet-400 hover:text-violet-300 transition-colors underline decoration-violet-900/50 underline-offset-4; }
+    .prose blockquote { @apply border-l-4 border-violet-600 bg-violet-600/5 pl-5 py-3 pr-5 text-stone-500 italic my-4 rounded-r-2xl; }
   </style>
 </head>
-<body class="bg-stone-950 text-stone-200 min-h-screen selection:bg-yellow-500/30 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-stone-900/40 via-stone-950 to-stone-950">
-  <nav class="bg-stone-900/90 backdrop-blur-md border-b border-yellow-900/20 sticky top-0 z-50 shadow-xl">
-    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="/" class="text-yellow-500 font-bold text-xl font-rpg tracking-widest uppercase hover:scale-105 hover:text-yellow-400 transition-all drop-shadow-md">⚔️ Nightcore</a>
-      <div class="flex items-center gap-6 text-sm font-rpg tracking-widest uppercase">
-        <a href="/" class="text-stone-300 hover:text-yellow-500 transition">Inicio</a>
-        <a href="/guias" class="text-stone-300 hover:text-yellow-500 transition">Guías</a>
-        <a href="/ausencias" class="text-stone-300 hover:text-yellow-500 transition">Ausencias</a>
-        <a href="/jugadores" class="text-stone-300 hover:text-yellow-500 transition">Jugadores</a>
+<body class="bg-[#0B0D13] overflow-x-hidden">
+  <!-- Background Elements -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-violet-600/10 blur-[120px] rounded-full animate-pulse"></div>
+    <div class="absolute -bottom-[20%] -left-[10%] w-[40%] h-[40%] bg-cyan-600/10 blur-[100px] rounded-full"></div>
+  </div>
+
+  <nav class="bg-[#0B0D13]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-50 py-4 shadow-2xl">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="/" class="group flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.4)] group-hover:scale-110 transition-all duration-300">
+            <span class="text-xl">🛡️</span>
+          </div>
+          <span class="text-2xl font-bold text-white font-rpg tracking-[0.2em] uppercase group-hover:text-violet-400 transition-colors">Nightcore</span>
+        </a>
+        
+        <div class="hidden md:flex items-center gap-8 text-[11px] font-rpg tracking-[0.3em] uppercase font-bold text-stone-500">
+          <a href="/" class="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Inicio</a>
+          <a href="/guias" class="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Pergaminos</a>
+          <a href="/ausencias" class="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Ausencias</a>
+          <a href="/jugadores" class="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Jugadores</a>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
         ${loginButton}
       </div>
     </div>
   </nav>
-  <main class="max-w-5xl mx-auto px-4 py-8">
+
+  <main class="max-w-6xl mx-auto px-6 py-12">
     ${content}
   </main>
+  
+  <footer class="max-w-6xl mx-auto px-6 py-12 border-t border-white/5 text-center">
+    <p class="text-[10px] font-rpg tracking-[0.3em] uppercase text-stone-600">© 2026 Nightcore Clan • Forjando Leyendas</p>
+  </footer>
 </body>
 </html>`;
 }
 
 export function adminLayout(title: string, content: string, user: User, currentPath?: string): string {
   const navItems = [
-    { href: "/admin", label: "Dashboard", icon: "📊" },
+    { href: "/admin", label: "Panel Central", icon: "📊" },
   ];
 
   if (user.role !== "escudero") {
@@ -88,7 +129,7 @@ export function adminLayout(title: string, content: string, user: User, currentP
   navItems.push({ href: "/admin/whitelist", label: "Whitelist", icon: "🛡️" });
   navItems.push({ href: "/admin/ausencias", label: "Ausencias", icon: "📥" });
   navItems.push({ href: "/admin/eventos", label: "Eventos", icon: "🎯" });
-  navItems.push({ href: "/admin/guias", label: "Guías", icon: "📖" });
+  navItems.push({ href: "/admin/guias", label: "Pergaminos", icon: "📖" });
 
   if (user.role !== "escudero") {
     navItems.push({ href: "/admin/alters", label: "Alters", icon: "🔀" });
@@ -103,19 +144,20 @@ export function adminLayout(title: string, content: string, user: User, currentP
       (item) => {
         const isActive = currentPath === item.href || (item.href !== "/admin" && currentPath?.startsWith(item.href));
         return `
-    <a href="${item.href}" class="flex items-center gap-3 px-3 py-2 rounded-lg transition text-sm ${isActive ? "bg-yellow-900/20 text-yellow-500 border border-yellow-800/50 shadow-inner" : "text-stone-400 hover:text-white hover:bg-stone-800"
+    <a href="${item.href}" class="group flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 ${isActive ? "bg-violet-600/10 text-violet-400 border border-violet-500/20 shadow-[0_0_20px_rgba(139,92,246,0.1)]" : "text-stone-500 hover:text-stone-200 hover:bg-white/5 border border-transparent"
           }">
-      <span>${item.icon}</span>
-      <span class="font-rpg tracking-wider uppercase text-xs">${item.label}</span>
+      <span class="text-lg group-hover:scale-120 transition-transform duration-300">${item.icon}</span>
+      <span class="font-rpg tracking-[0.2em] uppercase text-[10px] font-bold">${item.label}</span>
+      ${isActive ? `<div class="ml-auto w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,1)]"></div>` : ""}
     </a>`;
       }
     )
     .join("");
 
   const roleColors: Record<string, string> = {
-    superadmin: "text-purple-400",
-    diputado: "text-cyan-400",
-    escudero: "text-amber-600",
+    superadmin: "text-fuchsia-400 shadow-[0_0_10px_rgba(192,38,211,0.3)]",
+    diputado: "text-cyan-400 shadow-[0_0_10px_rgba(8,145,178,0.3)]",
+    escudero: "text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]",
   };
   const roleColor = roleColors[user.role] ?? "text-stone-400";
 
@@ -125,42 +167,98 @@ export function adminLayout(title: string, content: string, user: User, currentP
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(title)} — Admin Nightcore</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style type="text/tailwindcss">
     @layer base {
-      ::-webkit-scrollbar { @apply w-2; }
-      ::-webkit-scrollbar-track { @apply bg-stone-950; }
-      ::-webkit-scrollbar-thumb { @apply bg-stone-800 rounded-full hover:bg-stone-700 transition; }
-      h1, h2, h3, .font-rpg { font-family: 'Cinzel', serif; }
-      body { font-family: 'Merriweather', serif; }
+      ::-webkit-scrollbar { @apply w-1.5; }
+      ::-webkit-scrollbar-track { @apply bg-[#0B0D13]; }
+      ::-webkit-scrollbar-thumb { @apply bg-stone-800 rounded-full hover:bg-violet-600 transition; }
+      
+      body { 
+        @apply bg-[#0B0D13] text-stone-300 min-h-screen selection:bg-violet-500/40;
+        font-family: 'Inter', sans-serif;
+      }
+      
+      h1, h2, h3, .font-rpg { font-family: 'Orbitron', sans-serif; }
+      .font-subtitle { font-family: 'Exo 2', sans-serif; }
     }
+    
+    .neon-border { @apply border border-white/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]; }
+    .neon-text-violet { @apply text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]; }
+    .neon-text-pink { @apply text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]; }
+    .neon-text-cyan { @apply text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]; }
+    .neon-text-green { @apply text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]; }
+    .neon-text-orange { @apply text-orange-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]; }
+    
+    .neon-glow-violet { @apply shadow-[0_0_30px_rgba(139,92,246,0.15)] border border-violet-500/20; }
+    .neon-glow-pink { @apply shadow-[0_0_30px_rgba(236,72,153,0.15)] border border-pink-500/20; }
+    .neon-glow-cyan { @apply shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/20; }
+    .neon-glow-green { @apply shadow-[0_0_30px_rgba(34,197,94,0.15)] border border-green-500/20; }
+    
+    .glass-panel { @apply bg-[#11131A]/60 backdrop-blur-2xl border border-white/5 shadow-2xl rounded-[2.5rem]; }
+    .glass-sidebar { @apply bg-[#0D0F16] border-r border-white/5 backdrop-blur-2xl; }
+    
+    .btn-primary { @apply bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all active:scale-95; }
+    .btn-secondary { @apply bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-95; }
   </style>
 </head>
-<body class="bg-stone-950 text-stone-200 min-h-screen flex selection:bg-yellow-500/30">
-  <aside class="w-64 bg-stone-900 border-r border-yellow-900/20 flex flex-col min-h-screen fixed top-0 left-0 shadow-2xl">
-    <div class="p-6 border-b border-yellow-900/20 bg-black/20">
-      <a href="/" class="text-yellow-500 font-bold text-xl font-rpg tracking-widest uppercase drop-shadow-md">⚔️ Nightcore</a>
-      <p class="text-[10px] text-stone-500 mt-1 uppercase tracking-widest font-rpg">Panel del Clan</p>
+<body class="bg-[#0B0D13] flex overflow-x-hidden">
+  <!-- Background Elements -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div class="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] bg-violet-600/10 blur-[120px] rounded-full animate-pulse"></div>
+    <div class="absolute -bottom-[20%] -left-[10%] w-[40%] h-[40%] bg-cyan-600/10 blur-[100px] rounded-full"></div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="w-72 glass-sidebar flex flex-col h-screen fixed top-0 left-0 shadow-[20px_0_40px_rgba(0,0,0,0.4)] z-50">
+    <div class="p-8 border-b border-white/5 mb-6">
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)] group-hover:scale-105 transition-transform">
+          <span class="text-xl">🛡️</span>
+        </div>
+        <div>
+          <span class="text-xl font-bold text-white font-rpg tracking-widest uppercase block">Nightcore</span>
+          <span class="text-[8px] text-stone-500 font-rpg tracking-[0.4em] uppercase block mt-0.5">Admin Panel</span>
+        </div>
+      </a>
     </div>
-    <nav class="flex-1 p-4 flex flex-col gap-1 overflow-y-auto">
-      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-rpg uppercase tracking-widest mb-4 border-b border-yellow-900/10 pb-4 rounded-none">
-        <span>🏠</span>
-        <span>Ir al Home</span>
+
+    <nav class="flex-1 px-4 flex flex-col gap-1.5 overflow-y-auto">
+      <a href="/" class="flex items-center gap-4 px-4 py-3 rounded-xl text-stone-500 hover:text-white hover:bg-white/5 transition-all text-[10px] font-rpg uppercase tracking-[0.3em] mb-4 border-b border-white/5 pb-6">
+        <span class="text-base">🏠</span>
+        <span>Volver al Portal</span>
       </a>
       ${nav}
     </nav>
-    <div class="p-6 border-t border-yellow-900/20 bg-black/30">
-      <p class="text-sm text-stone-300 mb-1 px-3 font-bold font-rpg uppercase tracking-wider">${esc(user.username)}</p>
-      <p class="text-xs ${roleColor} mb-4 px-3 font-rpg uppercase tracking-widest font-bold">${esc(user.role)}</p>
-      <a href="/auth/logout" class="flex items-center gap-2 px-3 py-2 rounded-lg text-stone-500 hover:text-red-400 hover:bg-stone-800 transition text-xs font-rpg uppercase tracking-widest">
-        <span>🚪</span><span>Cerrar sesión</span>
+
+    <div class="p-8 border-t border-white/5 bg-black/20">
+      <div class="flex items-center gap-4 mb-6">
+        <div class="w-10 h-10 rounded-full bg-stone-800 border border-white/10 flex items-center justify-center text-stone-400 font-bold font-rpg">
+          ${user.username[0].toUpperCase()}
+        </div>
+        <div class="min-w-0">
+          <p class="text-xs font-bold text-white truncate font-rpg tracking-wider uppercase">${esc(user.username)}</p>
+          <p class="text-[9px] ${roleColor.split(' ')[0]} font-rpg tracking-[0.2em] uppercase font-bold mt-0.5">${esc(user.role)}</p>
+        </div>
+      </div>
+      <a href="/auth/logout" class="flex items-center gap-3 px-4 py-3 rounded-xl text-stone-600 hover:text-red-400 hover:bg-red-400/5 border border-transparent hover:border-red-400/20 transition-all text-[9px] font-rpg uppercase tracking-[0.3em] font-bold">
+        <span>🚪</span><span>Abandonar</span>
       </a>
     </div>
   </aside>
-  <div class="ml-64 flex-1 p-10 min-h-screen bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-stone-900/50 via-stone-950 to-stone-950">
-    <h1 class="text-3xl font-bold text-white mb-8 tracking-wider uppercase">${esc(title)}</h1>
-    ${content}
+
+  <!-- Main Content -->
+  <div class="ml-72 flex-1 min-h-screen relative">
+    <div class="absolute top-0 right-0 w-[40%] h-[40%] bg-violet-600/5 blur-[100px] pointer-events-none -z-10"></div>
+    
+    <header class="h-24 px-12 flex items-center border-b border-white/5 bg-[#0B0D13]/50 backdrop-blur-sm sticky top-0 z-40">
+      <h1 class="text-2xl font-bold text-white tracking-[0.3em] uppercase drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">${esc(title)}</h1>
+    </header>
+
+    <div class="p-12 max-w-7xl">
+      ${content}
+    </div>
   </div>
 </body>
 </html>`;

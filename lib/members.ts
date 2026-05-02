@@ -13,9 +13,22 @@ export async function syncClanMembers() {
 
   try {
     const res = await fetch(`${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`);
-    const data = await res.json();
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Sync error: API returned ${res.status} - ${text.slice(0, 50)}`);
+      return;
+    }
 
-    if (!(data as Record<string, unknown>)?.memberlist) {
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error(`Sync error: Invalid JSON response - ${text.slice(0, 50)}`);
+      return;
+    }
+
+    if (!data?.memberlist) {
       console.error("Sync error: No memberlist in API response");
       return;
     }

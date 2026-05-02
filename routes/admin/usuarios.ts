@@ -21,10 +21,10 @@ usuarios.get("/", async (c) => {
   const ok = c.req.query("ok");
   const error = c.req.query("error");
 
-  const roleBadge: Record<string, string> = {
-    superadmin: "border-purple-800 text-purple-400 bg-purple-950/20",
-    admin:      "border-blue-800 text-blue-400 bg-blue-950/20",
-    diputado:   "border-cyan-800 text-cyan-400 bg-cyan-950/20",
+  const roleColors: Record<string, string> = {
+    superadmin: "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/5 shadow-[0_0_10px_rgba(192,38,211,0.2)]",
+    diputado:   "text-cyan-400 border-cyan-500/30 bg-cyan-500/5 shadow-[0_0_10px_rgba(6,182,212,0.2)]",
+    escudero:   "text-amber-500 border-amber-500/30 bg-amber-500/5 shadow-[0_0_10px_rgba(245,158,11,0.2)]",
   };
 
   const rows = list
@@ -32,50 +32,47 @@ usuarios.get("/", async (c) => {
       const isSelf      = u.id === user.sub;
       const isSuperadmin = u.role === "superadmin";
       const pendingBadge = u.must_change_password
-        ? `<span class="ml-1 text-xs text-yellow-500 animate-pulse" title="Debe cambiar contraseña">⚠</span>`
+        ? `<span class="ml-2 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,1)]" title="Cambio de contraseña pendiente"></span>`
         : "";
 
       const resetCell = isSuperadmin
-        ? `<span class="text-[10px] text-stone-700 font-rpg uppercase italic">—</span>`
-        : `<form method="POST" action="/admin/usuarios/${u.id}/resetear" class="flex items-center gap-2"
+        ? `<span class="text-[9px] text-stone-700 font-rpg uppercase italic tracking-widest font-bold">Inmune</span>`
+        : `<form method="POST" action="/admin/usuarios/${u.id}/resetear" class="flex items-center gap-3"
                onsubmit="return confirm('¿Restablecer el secreto de ${esc(u.username)}?')">
              <input type="password" name="password" placeholder="Nueva pass" minlength="8" required
-               class="w-28 bg-stone-950 border border-yellow-900/10 rounded-lg px-2 py-1 text-[10px] text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase" />
-             <button type="submit"
-               class="text-[9px] font-rpg font-bold uppercase tracking-widest bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white px-2 py-1 rounded transition border border-yellow-900/10">
-               Resetear
-             </button>
+               class="w-32 bg-[#0B0D13] border border-white/10 rounded-lg px-3 py-1.5 text-[10px] text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-widest transition-all" />
+             <button type="submit" class="text-[9px] font-rpg font-bold uppercase tracking-widest text-violet-400 hover:text-violet-300 transition-all">Resetear</button>
            </form>`;
 
       return `
-    <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
-      <td class="py-4 px-6">
-        <div class="flex items-center gap-2">
-          <span class="text-stone-200 font-bold">${esc(u.username)}</span>
+    <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+      <td class="py-6 px-8">
+        <div class="flex items-center gap-3">
+          <span class="text-white font-bold font-rpg tracking-widest text-sm uppercase">${esc(u.username)}</span>
           ${pendingBadge}
-          ${isSelf ? `<span class="text-[10px] text-stone-500 font-rpg uppercase italic tracking-widest">(Tú)</span>` : ""}
+          ${isSelf ? `<span class="text-[9px] text-stone-600 font-rpg uppercase tracking-widest font-bold">(Tú)</span>` : ""}
         </div>
       </td>
-      <td class="py-4 px-6">
+      <td class="py-6 px-6">
         ${isSelf ? `
-          <span class="inline-block text-[9px] font-bold px-2 py-0.5 rounded border border-yellow-900/30 text-yellow-500 font-rpg uppercase tracking-widest ${roleBadge[u.role]}">
+          <span class="inline-flex items-center gap-2 text-[8px] font-bold px-3 py-1 rounded-full border font-rpg uppercase tracking-[0.2em] ${roleColors[u.role] || "text-stone-400 border-white/10"}">
             ${esc(u.role)}
           </span>` : `
           <form method="POST" action="/admin/usuarios/${u.id}/rol" class="flex items-center gap-2">
             <select name="role" onchange="this.form.submit()"
-              class="bg-stone-950 border border-yellow-900/10 rounded px-2 py-1 text-[9px] text-stone-400 focus:border-yellow-600 focus:outline-none font-rpg uppercase cursor-pointer">
+              class="bg-[#0B0D13] border border-white/10 rounded-lg px-3 py-1.5 text-[9px] text-violet-400 font-bold focus:border-violet-500 focus:outline-none font-rpg uppercase cursor-pointer transition-all">
               ${VALID_ROLES.map(r => `<option value="${r}" ${u.role === r ? "selected" : ""}>${r}</option>`).join("")}
             </select>
           </form>
         `}
       </td>
-      <td class="py-4 px-6 text-stone-600 font-mono text-[10px]">${u.created_at.slice(0, 10)}</td>
-      <td class="py-4 px-6">${resetCell}</td>
-      <td class="py-4 px-6 text-right">
+      <td class="py-6 px-6 text-stone-700 font-mono text-[10px] font-bold tracking-tighter">${u.created_at.slice(0, 10)}</td>
+      <td class="py-6 px-6">${resetCell}</td>
+      <td class="py-6 px-8 text-right">
         ${!isSelf
           ? `<form method="POST" action="/admin/usuarios/${u.id}/borrar" class="inline"
                onsubmit="return confirm('¿Eliminar a ${esc(u.username)} del consejo?')">
-               <button type="submit" class="text-[10px] font-rpg uppercase font-bold tracking-widest text-red-400 hover:text-red-300 transition">Expulsar</button>
+               <button type="submit" class="text-[9px] font-rpg font-bold uppercase tracking-[0.3em] text-red-500/70 hover:text-red-400 transition-all">Expulsar</button>
              </form>`
           : ""}
       </td>
@@ -84,48 +81,55 @@ usuarios.get("/", async (c) => {
     .join("");
 
   const content = `
-    ${ok ? `<div class="bg-green-900/20 border border-green-800/50 text-green-400 text-[10px] rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">✓ Los registros han sido actualizados</div>` : ""}
-    ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-[10px] rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">⚠️ ${esc(decodeURIComponent(error))}</div>` : ""}
+    ${ok ? `<div class="bg-violet-600/10 border border-violet-500/30 text-violet-400 text-[10px] rounded-xl px-6 py-4 mb-8 font-rpg uppercase tracking-[0.2em] font-bold shadow-lg animate-fade-in">✓ Los registros han sido actualizados</div>` : ""}
+    ${error ? `<div class="bg-red-600/10 border border-red-500/30 text-red-400 text-[10px] rounded-xl px-6 py-4 mb-8 font-rpg uppercase tracking-[0.2em] font-bold shadow-lg animate-fade-in">⚠️ ${esc(decodeURIComponent(error))}</div>` : ""}
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 mb-10 shadow-xl relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">👥</div>
-      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6 border-b border-yellow-900/10 pb-4">👥 Reclutar al Consejo</h2>
-      <form method="POST" action="/admin/usuarios/crear" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="glass-panel p-10 mb-12 relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none rotate-12">🔑</div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-[11px] text-white mb-8 pb-4 border-b border-white/5 flex items-center gap-4">
+        <span class="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,1)]"></span>
+        Reclutar al Consejo
+      </h2>
+      <form method="POST" action="/admin/usuarios/crear" class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <input name="username" type="text" placeholder="Usuario" required
-          class="bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-5 py-3.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-widest uppercase transition-all" />
         <input name="password" type="password" placeholder="Clave temporal" required minlength="8"
-          class="bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-5 py-3.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-widest uppercase transition-all" />
         <select name="role"
-          class="bg-stone-950 border border-yellow-900/10 rounded-xl px-3 py-3 text-white text-sm focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest">
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-5 py-3.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-widest uppercase cursor-pointer transition-all">
           <option value="escudero">Escudero</option>
           <option value="diputado">Diputado</option>
           <option value="superadmin">Superadmin</option>
         </select>
-        <button type="submit"
-          class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-xl active:scale-95">
+        <button type="submit" class="btn-primary text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3.5 rounded-xl shadow-xl active:scale-95">
           Crear
         </button>
       </form>
-      <p class="text-[9px] text-stone-600 mt-4 font-rpg uppercase tracking-widest italic italic">El nuevo recluta deberá cambiar su secreto al entrar por primera vez a la fortaleza.</p>
+      <p class="text-[9px] text-stone-600 mt-6 font-rpg uppercase tracking-[0.2em] italic font-bold">El nuevo recluta deberá cambiar su secreto al entrar por primera vez a la fortaleza.</p>
     </div>
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
-      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">📜 Consejo del Panel</h2>
-        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">${list.length} usuarios</span>
+    <div class="glass-panel overflow-hidden">
+      <div class="px-10 py-8 border-b border-white/5 bg-black/20 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-1.5 h-6 bg-violet-600 rounded-full shadow-[0_0_10px_rgba(139,92,246,1)]"></div>
+          <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-sm text-white">Consejo del Panel</h2>
+        </div>
+        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-[0.2em] font-bold bg-black/40 px-3 py-1 rounded-full">${list.length} Usuarios</span>
       </div>
-      <table class="w-full">
-        <thead>
-          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Usuario</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Rol</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Creado</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Resetear Pass</th>
-            <th class="py-4 px-6"></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-[9px] text-stone-600 uppercase font-rpg tracking-[0.4em] bg-white/5 border-b border-white/5">
+              <th class="py-6 px-8 text-left">Usuario</th>
+              <th class="py-6 px-6 text-left">Rol</th>
+              <th class="py-6 px-6 text-left">Creado</th>
+              <th class="py-6 px-6 text-left">Restablecer</th>
+              <th class="py-6 px-8"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 

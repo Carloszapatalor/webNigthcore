@@ -15,6 +15,7 @@ interface RecruitmentMember { memberName: string; rank: number }
 interface SimpleProfile     { hoursOffline: number }
 
 const RANK_LABELS: Record<number, string> = { 0: "Miembro", 1: "Diputado", 2: "Líder" };
+const RANK_COLORS: Record<number, string> = { 0: "text-stone-500", 1: "text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.3)]", 2: "text-violet-400 drop-shadow-[0_0_5px_rgba(139,92,246,0.3)]" };
 
 const miembros = new Hono();
 
@@ -35,7 +36,7 @@ miembros.get("/", async (c) => {
             GROUP BY d.username`,
       args: [weekStart],
     }),
-    db.execute(`SELECT member_name, rank, updated_at FROM clan_members ORDER BY rank DESC, member_name ASC`),
+    db.execute(`SELECT member_name, rank, updated_at, hours_offline FROM clan_members ORDER BY rank DESC, member_name ASC`),
     db.execute(`SELECT username, alter_name FROM member_alters`),
   ]);
 
@@ -67,37 +68,55 @@ miembros.get("/", async (c) => {
 
   const datalistOptions = allMembers.map((m) => `<option value="${esc(m.member_name)}">`).join("");
 
-    const rows =
+  const rows =
     memberList.length === 0
-      ? `<tr><td colspan="7" class="py-8 text-center text-gray-500 text-sm">Sin miembros — pulsa <strong class="text-white">🔄 Actualizar</strong> para cargar desde la API</td></tr>`
+      ? `<tr><td colspan="7" class="py-20 text-center text-stone-700 text-[10px] font-rpg uppercase tracking-[0.5em] italic">No hay miembros</td></tr>`
       : memberList.map((m) => {
           const rpg = rpgMap.get(m.member_name.toLowerCase());
           const offline = Number(m.hours_offline);
           const isInvalid = isNaN(offline) || m.hours_offline === null || offline < 0;
           const offlineText = isInvalid ? "—" : `${Math.round(offline)}h`;
-          const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-gray-400";
+          const offlineColor = offline > 72 ? "text-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]" : offline > 48 ? "text-orange-500" : "text-green-500";
           const rankLabel = RANK_LABELS[m.rank] ?? `Rango ${m.rank}`;
           const currentAlter = alterMap.get(m.member_name.toLowerCase()) ?? "";
 
           return `
-    <tr class="border-b border-stone-800/50 hover:bg-stone-800/40 transition text-sm">
-      <td class="py-2.5 px-4 font-medium">${esc(m.member_name)}</td>
-      <td class="py-2.5 px-4 text-stone-500">${esc(rankLabel)}</td>
-      <td class="py-2.5 px-4 text-purple-400 font-rpg uppercase text-[10px]">${rpg ? rpg.title : "—"}</td>
-      <td class="py-2.5 px-4 text-center text-stone-300 font-rpg">${rpg ? rpg.level : "—"}</td>
-      <td class="py-2.5 px-4 text-right font-mono text-cyan-400 text-xs">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
-      <td class="py-2.5 px-3">
-        <form method="POST" action="/admin/miembros/alter" class="flex items-center gap-1.5">
+    <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+      <td class="py-5 px-6">
+        <div class="flex items-center gap-3">
+          <div class="w-1.5 h-1.5 rounded-full ${offline <= 1 ? 'bg-green-500 animate-pulse shadow-[0_0_5px_rgba(34,197,94,1)]' : 'bg-stone-800'}"></div>
+          <span class="text-white font-bold font-subtitle text-sm uppercase tracking-wider">${esc(m.member_name)}</span>
+        </div>
+      </td>
+      <td class="py-5 px-6">
+        <span class="text-[10px] font-rpg uppercase tracking-widest font-bold ${RANK_COLORS[m.rank] || 'text-stone-500'}">${esc(rankLabel)}</span>
+      </td>
+      <td class="py-5 px-6">
+        <span class="text-[9px] font-rpg uppercase tracking-[0.2em] text-violet-400 font-bold">${rpg ? rpg.title : "—"}</span>
+      </td>
+      <td class="py-5 px-6 text-center">
+        <span class="font-rpg text-xs text-stone-300">${rpg ? rpg.level : "—"}</span>
+      </td>
+      <td class="py-5 px-6 text-right">
+        <span class="font-rpg text-xs text-cyan-400 font-bold drop-shadow-[0_0_5px_rgba(34,211,238,0.3)]">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</span>
+      </td>
+      <td class="py-5 px-6">
+        <span class="font-mono text-xs ${offlineColor} font-bold">${offlineText}</span>
+      </td>
+      <td class="py-5 px-6 text-right">
+        <form method="POST" action="/admin/miembros/alter" class="flex items-center justify-end gap-2">
           <input type="hidden" name="username" value="${esc(m.member_name)}" />
-          <input type="text" name="alter" list="clan-members-list"
-            value="${esc(currentAlter)}" placeholder="Buscar…" autocomplete="off"
-            onchange="setTimeout(()=>this.form.submit(),50)"
-            class="w-32 bg-stone-900 border border-stone-800 rounded px-2 py-1 text-xs text-white focus:border-yellow-600 focus:outline-none transition" />
-          ${currentAlter
-            ? `<button type="button"
-                 onclick="fetch('/admin/miembros/alter/quitar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username=${encodeURIComponent(m.member_name)}'}).then(()=>location.reload())"
-                 class="text-stone-600 hover:text-red-400 transition text-xs">✕</button>`
-            : ""}
+          <div class="relative group">
+            <input type="text" name="alter" list="clan-members-list"
+              value="${esc(currentAlter)}" placeholder="Escribir nombre del alter..." autocomplete="off"
+              onchange="setTimeout(()=>this.form.submit(),50)"
+              class="w-32 bg-[#0B0D13] border border-white/5 rounded-xl px-3 py-1.5 text-[10px] text-white focus:border-violet-500 focus:outline-none transition-all placeholder:text-stone-800 font-subtitle uppercase tracking-widest" />
+            ${currentAlter
+              ? `<button type="button"
+                   onclick="fetch('/admin/miembros/alter/quitar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username=${encodeURIComponent(m.member_name)}'}).then(()=>location.reload())"
+                   class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-700 hover:text-red-500 transition-colors text-xs font-bold">✕</button>`
+              : ""}
+          </div>
         </form>
       </td>
     </tr>`;
@@ -108,38 +127,51 @@ miembros.get("/", async (c) => {
   const syncError = c.req.query("error");
 
   const content = `
-    ${ok ? `<div class="bg-green-900/30 border border-green-700 text-green-400 text-sm rounded-lg px-4 py-3 mb-4">Alter guardado</div>` : ""}
-    ${synced ? `<div class="bg-green-900/30 border border-green-700 text-green-400 text-sm rounded-lg px-4 py-3 mb-4">✓ Lista actualizada desde la API</div>` : ""}
-    ${syncError ? `<div class="bg-red-900/30 border border-red-700 text-red-400 text-sm rounded-lg px-4 py-3 mb-4">⚠️ ${esc(decodeURIComponent(syncError))}</div>` : ""}
-    <datalist id="clan-members-list">${datalistOptions}</datalist>
+    <div class="flex flex-col gap-8">
+      ${ok ? `<div class="bg-violet-600/10 border border-violet-500/30 text-violet-400 text-[10px] font-rpg uppercase tracking-[0.2em] rounded-2xl px-6 py-4 shadow-lg animate-fade-in font-bold">Alter actualizado</div>` : ""}
+      ${synced ? `<div class="bg-cyan-600/10 border border-cyan-500/30 text-cyan-400 text-[10px] font-rpg uppercase tracking-[0.2em] rounded-2xl px-6 py-4 shadow-lg animate-fade-in font-bold">✓ Miembros sincronizados</div>` : ""}
+      ${syncError ? `<div class="bg-red-600/10 border border-red-500/30 text-red-400 text-[10px] font-rpg uppercase tracking-[0.2em] rounded-2xl px-6 py-4 shadow-lg animate-fade-in font-bold">⚠️ Error: ${esc(decodeURIComponent(syncError))}</div>` : ""}
+      
+      <datalist id="clan-members-list">${datalistOptions}</datalist>
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-xl">
-      <div class="px-6 py-4 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-        <h2 class="font-bold font-rpg uppercase tracking-widest text-sm text-yellow-500">Miembros del clan</h2>
-        <div class="flex items-center gap-4">
-          ${lastSync ? `<span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">Sincronizado: ${lastSync}</span>` : ""}
-          <span class="text-[10px] text-stone-400 font-rpg uppercase tracking-widest">${memberList.length} miembros</span>
-          <form method="POST" action="/admin/miembros/sync">
-            <button type="submit" title="La sincronización es automática cada 30 min. Usa esto solo si es urgente."
-              class="text-[10px] font-rpg uppercase tracking-widest bg-stone-800 border border-yellow-900/30 hover:bg-yellow-700 text-stone-300 hover:text-stone-950 px-3 py-1.5 rounded-lg transition shadow-lg active:scale-95">
-              🔄 Forzar Sync
-            </button>
-          </form>
+      <div class="glass-panel overflow-hidden">
+        <div class="px-10 py-8 border-b border-white/5 flex items-center justify-between bg-black/20">
+          <div class="flex items-center gap-4">
+             <div class="w-1.5 h-6 bg-cyan-600 rounded-full shadow-[0_0_10px_rgba(8,145,178,1)]"></div>
+             <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-[11px] text-white">Lista de Miembros</h2>
+          </div>
+          
+          <div class="flex items-center gap-6">
+            ${lastSync ? `<span class="text-[9px] text-stone-600 font-rpg uppercase tracking-[0.3em] font-bold">Última Sync: ${lastSync}</span>` : ""}
+            <span class="text-[9px] text-violet-500 font-rpg uppercase tracking-[0.3em] font-bold bg-violet-600/10 px-3 py-1 rounded-full">${memberList.length} Activos</span>
+            <form method="POST" action="/admin/miembros/sync">
+              <button type="submit" title="Sincronización automática activa (30m)"
+                class="text-[9px] font-rpg uppercase tracking-[0.3em] btn-secondary px-5 py-2.5 rounded-xl font-bold">
+                🔄 Sincronizar
+              </button>
+            </form>
+          </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="text-[9px] text-stone-700 uppercase font-rpg tracking-[0.4em] bg-white/5 border-b border-white/5">
+                <th class="py-5 px-8 text-left">Miembro</th>
+                <th class="py-5 px-6 text-left">Rango</th>
+                <th class="py-5 px-6 text-left">Título RPG</th>
+                <th class="py-5 px-6 text-center">Nivel</th>
+                <th class="py-5 px-6 text-right">EXP Semanal</th>
+                <th class="py-5 px-6 text-left">Estado</th>
+                <th class="py-5 px-6 text-right">Alter</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              ${rows}
+            </tbody>
+          </table>
         </div>
       </div>
-      <table class="w-full">
-        <thead>
-          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
-            <th class="py-3 px-4 text-left font-rpg tracking-widest">Jugador</th>
-            <th class="py-3 px-4 text-left font-rpg tracking-widest">Rango</th>
-            <th class="py-3 px-4 text-left font-rpg tracking-widest">Título RPG</th>
-            <th class="py-3 px-4 text-center font-rpg tracking-widest">Nivel</th>
-            <th class="py-3 px-4 text-right font-rpg tracking-widest">EXP Semanal</th>
-            <th class="py-3 px-4 text-left font-rpg tracking-widest">Alter</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
     </div>
   `;
 

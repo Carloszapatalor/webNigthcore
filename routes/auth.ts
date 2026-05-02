@@ -11,36 +11,35 @@ auth.get("/login", (c) => {
   const error = c.req.query("error");
   const content = `
     <div class="max-w-md mx-auto mt-20 px-4">
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-10 shadow-2xl relative overflow-hidden">
-        <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">⚔️</div>
+      <div class="glass-panel p-10 relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none rotate-12">🛡️</div>
         
         <div class="text-center mb-10">
-          <h2 class="text-3xl font-bold font-rpg uppercase tracking-[0.3em] text-yellow-500 mb-2">Fortaleza</h2>
-          <p class="text-stone-500 font-rpg uppercase tracking-widest text-xs">Acceso al Consejo del Clan</p>
+          <h2 class="text-3xl font-bold font-rpg uppercase tracking-[0.3em] text-white mb-2 neon-text-violet">Fortaleza</h2>
+          <p class="text-stone-500 font-rpg uppercase tracking-widest text-[9px] font-bold">Acceso al Consejo del Clan</p>
         </div>
 
-        ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest text-center italic">⚠️ ${esc(error)}</div>` : ""}
+        ${error ? `<div class="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest text-center italic font-bold">⚠️ ${esc(error)}</div>` : ""}
         
         <form method="POST" action="/auth/login" class="flex flex-col gap-6">
           <div>
-            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Identidad</label>
-            <input name="username" type="text" required autofocus placeholder="Nombre de guerrero"
-              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
+            <label class="block text-[9px] font-bold font-rpg uppercase tracking-widest text-stone-500 mb-2 ml-1">Identidad de Guerrero</label>
+            <input name="username" type="text" required autofocus placeholder="Nombre..."
+              class="w-full bg-[#0B0D13] border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-[0.2em] transition-all" />
           </div>
           <div>
-            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Secreto</label>
+            <label class="block text-[9px] font-bold font-rpg uppercase tracking-widest text-stone-500 mb-2 ml-1">Secreto</label>
             <input name="password" type="password" required placeholder="••••••••"
-              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
+              class="w-full bg-[#0B0D13] border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-[0.2em] transition-all" />
           </div>
           
-          <button type="submit"
-            class="w-full bg-yellow-700 hover:bg-yellow-600 text-stone-950 font-bold font-rpg uppercase tracking-[0.2em] py-4 rounded-xl transition shadow-xl shadow-yellow-950/20 active:scale-95 mt-4">
+          <button type="submit" class="btn-primary w-full py-5 rounded-2xl font-bold font-rpg uppercase tracking-[0.2em] mt-4">
             Entrar al Castillo
           </button>
         </form>
 
-        <div class="mt-10 pt-6 border-t border-yellow-900/10 text-center">
-          <a href="/" class="text-stone-600 hover:text-stone-400 transition text-[10px] font-rpg uppercase tracking-widest">← Volver a las Tierras del Clan</a>
+        <div class="mt-10 pt-6 border-t border-white/5 text-center">
+          <a href="/" class="text-stone-600 hover:text-violet-400 transition-all text-[9px] font-rpg uppercase tracking-widest font-bold">← Volver a las Tierras del Clan</a>
         </div>
       </div>
     </div>
@@ -103,33 +102,32 @@ auth.get("/change-password", async (c) => {
 
   const content = `
     <div class="max-w-md mx-auto mt-20 px-4">
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-10 shadow-2xl relative overflow-hidden">
-        <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🔐</div>
+      <div class="glass-panel p-10 relative overflow-hidden">
+        <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none rotate-12">🔐</div>
         
         <div class="text-center mb-10">
-          <h2 class="text-3xl font-bold font-rpg uppercase tracking-[0.2em] text-yellow-500 mb-2">Cambiar Secreto</h2>
+          <h2 class="text-3xl font-bold font-rpg uppercase tracking-[0.2em] text-white mb-2 neon-text-violet">Nuevo Secreto</h2>
           ${forced
-            ? `<p class="text-yellow-600 font-rpg uppercase tracking-widest text-[10px] italic">Como nuevo recluta, debes establecer tu propio secreto</p>`
-            : `<p class="text-stone-500 font-rpg uppercase tracking-widest text-xs">Hola, ${esc(payload.username)}</p>`
+            ? `<p class="text-violet-400 font-rpg uppercase tracking-widest text-[9px] italic font-bold">Como nuevo recluta, debes establecer tu propio secreto</p>`
+            : `<p class="text-stone-500 font-rpg uppercase tracking-widest text-[10px] font-bold">Hola, ${esc(payload.username)}</p>`
           }
         </div>
 
-        ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest text-center italic">⚠️ ${esc(decodeURIComponent(error))}</div>` : ""}
+        ${error ? `<div class="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] rounded-xl px-4 py-3 mb-8 font-rpg uppercase tracking-widest text-center italic font-bold">⚠️ ${esc(decodeURIComponent(error))}</div>` : ""}
         
         <form method="POST" action="/auth/change-password" class="flex flex-col gap-6">
           <div>
-            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Nuevo Secreto</label>
+            <label class="block text-[9px] font-bold font-rpg uppercase tracking-widest text-stone-500 mb-2 ml-1">Nuevo Secreto</label>
             <input name="password" type="password" required minlength="8" autofocus placeholder="Mínimo 8 caracteres"
-              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
+              class="w-full bg-[#0B0D13] border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-[0.2em] transition-all" />
           </div>
           <div>
-            <label class="block text-xs font-bold font-rpg uppercase tracking-widest text-stone-400 mb-2 ml-1">Confirmar Secreto</label>
+            <label class="block text-[9px] font-bold font-rpg uppercase tracking-widest text-stone-500 mb-2 ml-1">Confirmar Secreto</label>
             <input name="confirm" type="password" required minlength="8" placeholder="Repite tu secreto"
-              class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3.5 text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest transition" />
+              class="w-full bg-[#0B0D13] border border-white/5 rounded-2xl px-5 py-4 text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-[0.2em] transition-all" />
           </div>
           
-          <button type="submit"
-            class="w-full bg-yellow-700 hover:bg-yellow-600 text-stone-950 font-bold font-rpg uppercase tracking-[0.2em] py-4 rounded-xl transition shadow-xl shadow-yellow-950/20 active:scale-95 mt-4">
+          <button type="submit" class="btn-primary w-full py-5 rounded-2xl font-bold font-rpg uppercase tracking-[0.2em] mt-4">
             Consagrar Secreto
           </button>
         </form>

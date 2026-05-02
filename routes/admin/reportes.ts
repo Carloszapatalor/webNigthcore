@@ -18,65 +18,73 @@ reportes.get("/", async (c) => {
   const members = membersResult.rows as any[];
 
   const rows = list.length === 0 
-    ? `<tr><td colspan="4" class="py-12 text-center text-stone-600 italic font-rpg uppercase tracking-widest text-sm">No hay expedientes registrados</td></tr>`
+    ? `<tr><td colspan="4" class="py-20 text-center text-stone-700 text-[10px] italic font-rpg uppercase tracking-[0.5em]">No hay expedientes registrados</td></tr>`
     : list.map(r => `
-    <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition">
-      <td class="py-4 px-6">
-        <span class="text-sm font-bold text-yellow-500 font-rpg uppercase tracking-wider">${esc(r.username)}</span>
+    <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+      <td class="py-6 px-8">
+        <span class="text-sm font-bold text-white font-rpg uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${esc(r.username)}</span>
       </td>
-      <td class="py-4 px-6">
-        <p class="text-stone-300 text-xs italic leading-relaxed">${esc(r.reason)}</p>
+      <td class="py-6 px-6">
+        <p class="text-stone-400 text-xs italic font-subtitle leading-relaxed">${esc(r.reason)}</p>
       </td>
-      <td class="py-4 px-6 text-stone-500 font-mono text-[10px] whitespace-nowrap">
+      <td class="py-6 px-6 text-stone-700 font-mono text-[10px] font-bold tracking-tighter">
         ${r.created_at.slice(0, 16).replace('T', ' ')}
       </td>
-      <td class="py-4 px-6 text-right">
+      <td class="py-6 px-8 text-right">
         <div class="flex justify-end gap-4">
           <form method="POST" action="/admin/reportes/${r.id}/borrar" onsubmit="return confirm('¿Eliminar este expediente definitivamente?')">
-            <button type="submit" class="text-[10px] font-rpg font-bold uppercase tracking-widest text-red-400 hover:text-red-300 transition">Eliminar</button>
+            <button type="submit" class="text-[9px] font-rpg font-bold uppercase tracking-[0.3em] text-red-500/70 hover:text-red-400 transition-all">Eliminar</button>
           </form>
         </div>
       </td>
     </tr>`).join("");
 
   const content = `
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 mb-10 shadow-xl relative overflow-hidden">
-      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">📢</div>
-      <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6 border-b border-yellow-900/10 pb-4">📢 Abrir Nuevo Expediente</h2>
+    <div class="glass-panel p-10 mb-12 relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none rotate-12">📢</div>
+      <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-[11px] text-white mb-8 pb-4 border-b border-white/5 flex items-center gap-4">
+        <span class="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_10px_rgba(139,92,246,1)]"></span>
+        Abrir Nuevo Expediente
+      </h2>
       <form method="POST" action="/admin/reportes/crear" class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="md:col-span-1">
           <input name="username" list="clan-members" placeholder="Miembro" required 
-            class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-sm text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
+            class="w-full bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-widest transition-all" />
           <datalist id="clan-members">
             ${members.map(m => `<option value="${esc(m.member_name)}">`).join("")}
           </datalist>
         </div>
         <div class="md:col-span-2">
-          <input name="reason" placeholder="Motivo del reporte o comportamiento..." required 
-            class="w-full bg-stone-950 border border-yellow-900/10 rounded-xl px-4 py-3 text-sm text-white focus:border-yellow-600 focus:outline-none font-rpg uppercase tracking-widest" />
+          <input name="reason" placeholder="Motivo del reporte..." required 
+            class="w-full bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-widest transition-all" />
         </div>
-        <button type="submit"
-          class="bg-yellow-700 hover:bg-yellow-600 text-stone-950 text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl transition shadow-xl active:scale-95">
+        <button type="submit" class="btn-primary text-[11px] font-bold font-rpg uppercase tracking-widest px-8 py-3 rounded-xl shadow-xl active:scale-95">
           Registrar
         </button>
       </form>
     </div>
 
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
-      <div class="px-8 py-5 border-b border-yellow-900/10 bg-black/20">
-        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">📜 Archivo de Comportamiento</h2>
+    <div class="glass-panel overflow-hidden">
+      <div class="px-10 py-8 border-b border-white/5 bg-black/20 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-1.5 h-6 bg-violet-600 rounded-full shadow-[0_0_10px_rgba(139,92,246,1)]"></div>
+          <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-sm text-white">Archivo de Comportamiento</h2>
+        </div>
+        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-[0.2em] font-bold bg-black/40 px-3 py-1 rounded-full">${list.length} Expedientes</span>
       </div>
-      <table class="w-full">
-        <thead>
-          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Miembro</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Motivo</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Fecha</th>
-            <th class="py-4 px-6"></th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-[9px] text-stone-600 uppercase font-rpg tracking-[0.4em] bg-white/5 border-b border-white/5">
+              <th class="py-6 px-8 text-left">Miembro</th>
+              <th class="py-6 px-6 text-left">Motivo</th>
+              <th class="py-6 px-6 text-left">Fecha</th>
+              <th class="py-6 px-8"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 

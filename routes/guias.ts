@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout, esc } from "../views/layout.ts";
 
-// ─── Tipos (deben coincidir con admin/guias.ts) ───────────────────────────────
+// ─── Tipos ───────────────────────────────────────────────────────────────
 
 export interface StatField   { label: string; value: string; color: string }
 export interface DropField   { icon: string; name: string; rate: string; rare: boolean }
@@ -26,314 +26,187 @@ export interface GuideData {
 // ─── Renderer visual ──────────────────────────────────────────────────────────
 
 const badgeColorMap: Record<string, string> = {
-  gray:   "border-stone-600 text-stone-400 bg-stone-900/30",
-  Gris:   "border-stone-600 text-stone-400 bg-stone-900/30",
-  red:    "border-red-500 text-red-400 bg-red-950/20",
-  Rojo:   "border-red-500 text-red-400 bg-red-950/20",
-  green:  "border-emerald-500 text-emerald-400 bg-emerald-950/20",
-  Verde:  "border-emerald-500 text-emerald-400 bg-emerald-950/20",
-  yellow: "border-yellow-500 text-yellow-400 bg-yellow-950/20",
-  Amarillo: "border-yellow-500 text-yellow-400 bg-yellow-950/20",
-  gold:   "border-amber-500 text-amber-400 bg-amber-950/20",
-  blue:   "border-blue-500 text-blue-400 bg-blue-950/20",
-  Azul:   "border-blue-500 text-blue-400 bg-blue-950/20",
-  purple: "border-purple-500 text-purple-400 bg-purple-950/20",
-  Morado: "border-purple-500 text-purple-400 bg-purple-950/20",
-  orange: "border-orange-500 text-orange-400 bg-orange-950/20",
-  Naranja: "border-orange-500 text-orange-400 bg-orange-950/20",
-  cyan:   "border-cyan-500 text-cyan-400 bg-cyan-950/20",
-  Cian:   "border-cyan-500 text-cyan-400 bg-cyan-950/20",
+  gray:   "border-stone-700 text-stone-500 bg-black/20",
+  red:    "border-red-500/40 text-red-400 bg-red-500/5 shadow-[0_0_10px_rgba(239,68,68,0.2)]",
+  green:  "border-green-500/40 text-green-400 bg-green-500/5 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
+  yellow: "border-orange-500/40 text-orange-400 bg-orange-500/5 shadow-[0_0_10px_rgba(249,115,22,0.2)]",
+  blue:   "border-blue-500/40 text-blue-400 bg-blue-500/5 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+  purple: "border-violet-500/40 text-violet-400 bg-violet-500/5 shadow-[0_0_10px_rgba(139,92,246,0.2)]",
+  orange: "border-orange-500/40 text-orange-400 bg-orange-500/5 shadow-[0_0_10px_rgba(249,115,22,0.2)]",
+  cyan:   "border-cyan-500/40 text-cyan-400 bg-cyan-500/5 shadow-[0_0_10px_rgba(6,182,212,0.2)]",
+};
+
+const statIconMap: Record<string, string> = {
+  "HP": "❤️", "VIDA": "❤️", "DAÑO": "⚔️", "ATAQUE": "⚔️", "RESISTENCIA": "🛡️", "DEFENSA": "🛡️",
+  "MAGIA": "🪄", "ARQUERÍA": "🏹", "RANGO": "🏹", "VELOCIDAD": "⚡", "ESPECIAL": "✨"
 };
 
 export function renderGuide(title: string, data: GuideData, author: string, date: string): string {
-  const statColorMap: Record<string, string> = {
-    default: "text-stone-400",
-    Gris:    "text-stone-400",
-    red:     "text-red-400",
-    Rojo:    "text-red-400",
-    green:   "text-emerald-400",
-    Verde:   "text-emerald-400",
-    yellow:  "text-yellow-500",
-    Amarillo: "text-yellow-500",
-    blue:    "text-blue-400",
-    Azul:    "text-blue-400",
-    purple:  "text-purple-400",
-    Morado:  "text-purple-400",
-    orange:  "text-orange-400",
-    Naranja: "text-orange-400",
-    cyan:    "text-cyan-400",
-    Cian:    "text-cyan-400",
-  };
-
   const imageSrc = data.imageBase64 || data.imageUrl || "";
   const heroMedia = imageSrc
-    ? `<div class="guide-hero-img shadow-2xl"><img src="${esc(imageSrc)}" alt="${esc(title)}" /></div>`
-    : data.bossEmoji
-      ? `<div class="guide-hero-img text-6xl shadow-2xl">${esc(data.bossEmoji)}</div>`
-      : "";
+    ? `<div class="relative group">
+         <div class="absolute -inset-4 bg-violet-600/20 blur-2xl rounded-full animate-pulse"></div>
+         <img src="${esc(imageSrc)}" class="w-48 h-48 rounded-full object-contain bg-[#0B0D13] border-4 border-violet-500/40 shadow-2xl relative z-10" />
+       </div>`
+    : `<div class="w-48 h-48 rounded-full bg-[#0B0D13] border-4 border-violet-500/40 flex items-center justify-center text-7xl shadow-2xl relative">
+         <div class="absolute -inset-4 bg-violet-600/10 blur-xl rounded-full"></div>
+         <span class="relative z-10">${esc(data.bossEmoji || "📜")}</span>
+       </div>`;
 
   const badges = (data.badges ?? []).map(b => `
-    <span class="guide-badge ${badgeColorMap[b.color] || badgeColorMap.gold}">
+    <span class="px-4 py-1.5 rounded-full border text-[10px] font-rpg font-bold tracking-widest uppercase ${badgeColorMap[b.color] || badgeColorMap.yellow}">
       ${esc(b.label)}
     </span>`).join("");
 
-  const infoBox = data.infoBox ? `
-    <div class="guide-box guide-box--info">${esc(data.infoBox)}</div>` : "";
-
   const statsGrid = (data.stats ?? []).length > 0 ? `
-    <div class="guide-section">
-      <div class="guide-section-header">📊 Estadísticas</div>
-      <div class="guide-section-body">
-        <div class="guide-stat-grid">
-          ${data.stats.map(s => `
-            <div class="guide-stat-card">
-              <div class="guide-stat-label">${esc(s.label)}</div>
-              <div class="guide-stat-value ${statColorMap[s.color] || ""}">${esc(s.value)}</div>
-            </div>`).join("")}
-        </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+      ${data.stats.map(s => {
+        const icon = statIconMap[s.label.toUpperCase()] || "📊";
+        return `
+        <div class="bg-black/40 border border-white/5 rounded-[2rem] p-6 text-center hover:border-violet-500/30 transition-all duration-300 group hover:bg-white/5 shadow-inner">
+          <div class="text-2xl mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${icon}</div>
+          <div class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1">${esc(s.label)}</div>
+          <div class="text-xl font-rpg font-bold text-white tracking-widest uppercase">${esc(s.value)}</div>
+        </div>`;
+      }).join("")}
+    </div>` : "";
+
+  const steps = (data.steps ?? []).map((s, i) => `
+    <div class="flex gap-6 items-start group">
+      <div class="w-10 h-10 rounded-xl bg-violet-600/10 border border-violet-500/30 flex items-center justify-center flex-shrink-0 text-violet-400 font-rpg font-bold text-sm shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover:bg-violet-600 group-hover:text-white transition-all">
+        ${i + 1}
       </div>
-    </div>` : "";
-
-  const warningBox = data.warningBox ? `
-    <div class="guide-box guide-box--warn">${esc(data.warningBox)}</div>` : "";
-
-  const steps = (data.steps ?? []).length > 0 ? `
-    <div class="guide-step-list">
-      ${data.steps.map((s, i) => `
-        <div class="guide-step">
-          <div class="guide-step-num font-rpg">${i + 1}</div>
-          <div class="guide-step-content">${esc(s.text)}</div>
-        </div>`).join("")}
-    </div>` : "";
-
-  const estrategia = (data.warningBox || steps) ? `
-    <div class="guide-section">
-      <div class="guide-section-header">⚔️ Estrategia</div>
-      <div class="guide-section-body">
-        ${warningBox}
-        ${steps}
+      <div class="flex-1 pt-2">
+        <p class="text-stone-300 leading-relaxed font-subtitle text-base">${esc(s.text)}</p>
       </div>
-    </div>` : "";
+    </div>`).join("");
 
-  const dropsGrid = (data.drops ?? []).length > 0 ? `
-    <div class="guide-section">
-      <div class="guide-section-header">💰 Drops destacados</div>
-      <div class="guide-section-body">
-        <div class="guide-drop-grid">
-          ${data.drops.map(d => `
-            <div class="guide-drop-card ${d.rare ? "guide-drop-card--rare" : ""}">
-              <div class="guide-drop-icon">${esc(d.icon)}</div>
-              <div>
-                <div class="guide-drop-name">${esc(d.name)}</div>
-                ${d.rate ? `<div class="guide-drop-rate">${esc(d.rate)}</div>` : ""}
-              </div>
-            </div>`).join("")}
-        </div>
+  const dropsGrid = (data.drops ?? []).map(d => `
+    <div class="bg-black/20 border ${d.rare ? 'border-orange-500/30 bg-orange-500/5' : 'border-white/5'} rounded-2xl p-5 flex items-center gap-5 hover:scale-105 transition-transform">
+      <div class="text-4xl drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${esc(d.icon || "📦")}</div>
+      <div class="min-w-0">
+        <div class="text-sm font-bold text-white font-rpg tracking-wider uppercase truncate">${esc(d.name)}</div>
+        <div class="text-[10px] text-stone-500 font-mono mt-1">${esc(d.rate || "Unknown")}</div>
       </div>
-    </div>` : "";
-
-  const tipBox = data.tipBox ? `
-    <div class="guide-box guide-box--tip">${esc(data.tipBox)}</div>` : "";
+      ${d.rare ? `<div class="ml-auto text-[8px] font-rpg font-bold text-orange-500 uppercase tracking-widest bg-orange-500/10 px-2 py-1 rounded">ÉPICO</div>` : ""}
+    </div>`).join("");
 
   return `
-    <style>
-      :root {
-        --g-bg:      #0c0a09;
-        --g-surf:    #1c1917;
-        --g-surf2:   #0c0a09;
-        --g-border:  #44403c;
-        --g-accent:  #eab308;
-        --g-purple:  #a855f7;
-        --g-danger:  #ef4444;
-        --g-success: #22c55e;
-        --g-text:    #d6d3d1;
-        --g-muted:   #78716c;
-      }
+    <!-- HEADER -->
+    <div class="mb-16">
+      <a href="/guias" class="inline-flex items-center gap-3 text-[10px] text-stone-600 hover:text-violet-400 font-rpg font-bold uppercase tracking-[0.4em] transition-all mb-12 group">
+        <span class="group-hover:-translate-x-2 transition-transform">←</span> Volver a los Pergaminos
+      </a>
 
-      .guide-hero {
-        position: relative;
-        background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
-        border: 1px solid rgba(234,179,8,0.2);
-        border-radius: 24px;
-        padding: 48px 40px;
-        display: flex;
-        align-items: center;
-        gap: 40px;
-        overflow: hidden;
-        margin-bottom: 40px;
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
-      }
-      .guide-hero-img {
-        flex-shrink:0;
-        width:140px; height:140px;
-        border-radius:50%;
-        border:4px solid var(--g-accent);
-        background:var(--g-surf2);
-        display:flex; align-items:center; justify-content:center;
-        position:relative; z-index:1;
-        background: radial-gradient(circle, #292524 0%, #1c1917 100%);
-      }
-      .guide-hero-img img {
-        width:100%; height:100%;
-        object-fit:cover; border-radius:50%;
-      }
-      .guide-category {
-        display:inline-block;
-        background:rgba(234,179,8,0.1);
-        color:var(--g-accent);
-        border:1px solid rgba(234,179,8,0.3);
-        border-radius:4px;
-        font-size:10px;
-        letter-spacing:3px;
-        text-transform:uppercase;
-        padding:4px 12px;
-        margin-bottom:12px;
-        font-family: 'Cinzel', serif;
-      }
-      .guide-title {
-        font-size:42px; font-weight:700;
-        color:white;
-        line-height:1.1; margin-bottom:12px;
-        font-family: 'Cinzel', serif;
-        letter-spacing: 2px;
-      }
-      .guide-subtitle { color:var(--g-muted); font-size:15px; margin-bottom:20px; font-family: 'Merriweather', serif; font-style: italic; }
-      .guide-badges { display:flex; gap:10px; flex-wrap:wrap; }
-      .guide-badge {
-        display:flex; align-items:center; gap:6px;
-        border:1px solid currentColor;
-        border-radius:20px;
-        padding:5px 14px;
-        font-size:11px; font-weight:700;
-        font-family: 'Cinzel', serif;
-        letter-spacing: 1px;
-      }
-      .guide-meta { color:var(--g-muted); font-size:13px; margin-bottom:32px; font-family: 'Cinzel', serif; letter-spacing: 1px; }
-
-      .guide-box {
-        border-radius:12px;
-        padding:20px 24px;
-        margin-bottom:24px;
-        font-size:15px;
-        line-height:1.7;
-        background: rgba(28, 25, 23, 0.6);
-        border: 1px solid rgba(234,179,8,0.1);
-      }
-      .guide-box--info { border-left:4px solid var(--g-purple); color:#d8b4fe; }
-      .guide-box--warn { border-left:4px solid var(--g-danger); color:#fca5a5; }
-      .guide-box--tip  { border-left:4px solid var(--g-success); color:#86efac; }
-
-      .guide-section {
-        background:rgba(28, 25, 23, 0.4);
-        border:1px solid rgba(234,179,8,0.1);
-        border-radius:20px;
-        margin-bottom:32px;
-        overflow:hidden;
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-      }
-      .guide-section-header {
-        padding:16px 24px;
-        background:rgba(0,0,0,0.2);
-        border-bottom:1px solid rgba(234,179,8,0.1);
-        font-size:13px; font-weight:700;
-        letter-spacing:2px; text-transform:uppercase;
-        color:var(--g-accent);
-        font-family: 'Cinzel', serif;
-      }
-      .guide-section-body { padding:24px; }
-
-      .guide-stat-grid {
-        display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-        gap:12px;
-      }
-      .guide-stat-card {
-        background:rgba(0,0,0,0.2);
-        border:1px solid rgba(234,179,8,0.05);
-        border-radius:12px;
-        padding:16px;
-        text-align:center;
-        transition: all 0.3s;
-      }
-      .guide-stat-card:hover { border-color: rgba(234,179,8,0.3); background: rgba(0,0,0,0.3); }
-      .guide-stat-label { font-size:10px; color:var(--g-muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px; font-family: 'Cinzel', serif; }
-      .guide-stat-value { font-size:22px; font-weight:700; font-family: 'Cinzel', serif; }
-
-      .guide-step-list { display:flex; flex-direction:column; gap:16px; }
-      .guide-step { display:flex; gap:16px; align-items:flex-start; }
-      .guide-step-num {
-        width:32px; height:32px; border-radius:8px;
-        background:var(--g-accent); color:var(--g-bg);
-        font-weight:700; font-size:14px; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-      }
-      .guide-step-content { padding-top:4px; font-size:15px; color:var(--g-text); }
-
-      .guide-drop-grid {
-        display:grid;
-        grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-        gap:12px;
-      }
-      .guide-drop-card {
-        background:rgba(0,0,0,0.2);
-        border:1px solid rgba(234,179,8,0.05);
-        border-radius:12px;
-        padding:16px;
-        display:flex; align-items:center; gap:14px;
-        transition: all 0.3s;
-      }
-      .guide-drop-card:hover { border-color: rgba(234,179,8,0.2); }
-      .guide-drop-card--rare { border-color:var(--g-accent); background:rgba(234,179,8,0.05); }
-      .guide-drop-icon { font-size:28px; }
-      .guide-drop-name { font-size:14px; font-weight:700; color:white; font-family: 'Cinzel', serif; }
-      .guide-drop-rate { font-size:12px; color:var(--g-muted); }
-
-      .guide-footer {
-        text-align:center; color:var(--g-muted);
-        font-size:11px; letter-spacing:3px;
-        padding:40px 0 20px;
-        text-transform: uppercase;
-        font-family: 'Cinzel', serif;
-      }
-      .btn-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--g-accent);
-        font-family: 'Cinzel', serif;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 32px;
-        transition: all 0.3s;
-        opacity: 0.7;
-      }
-      .btn-back:hover { opacity: 1; transform: translateX(-4px); }
-    </style>
-
-    <a href="/guias" class="btn-back">← Volver a los Pergaminos</a>
-
-    <!-- HERO -->
-    <div class="guide-hero">
-      ${heroMedia}
-      <div class="guide-hero-text">
-        <div class="guide-category">${esc(data.category || "Guía")}</div>
-        <div class="guide-title">${esc(title)}</div>
-        <div class="guide-subtitle">${esc(data.subtitle)}</div>
-        <div class="guide-badges">${badges}</div>
+      <div class="glass-panel p-12 relative overflow-hidden">
+        <div class="absolute -right-20 -bottom-20 text-[20rem] opacity-[0.01] pointer-events-none rotate-12 font-rpg">GUIDE</div>
+        
+        <div class="flex flex-col md:flex-row items-center gap-12 relative z-10">
+          <div class="flex-shrink-0 relative">
+            <div class="absolute -inset-4 bg-violet-600/10 blur-3xl rounded-full -z-10"></div>
+            ${heroMedia}
+          </div>
+          
+          <div class="flex-1 text-center md:text-left space-y-6">
+            <div class="inline-block px-4 py-1.5 bg-violet-600/10 border border-violet-500/30 rounded-lg text-[10px] font-rpg font-bold tracking-[0.4em] text-violet-400 uppercase">
+              ${esc(data.category || "Pergamino")}
+            </div>
+            <h2 class="text-5xl md:text-6xl font-bold text-white font-rpg tracking-tighter leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              ${esc(title)}
+            </h2>
+            <p class="text-stone-500 font-subtitle text-lg italic max-w-xl">
+              "${esc(data.subtitle)}"
+            </p>
+            <div class="flex flex-wrap justify-center md:justify-start gap-3 pt-2">
+              ${badges}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <p class="guide-meta">Escrito por <span class="text-stone-100">${esc(author)}</span> · ${esc(date)}</p>
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      
+      <!-- LEFT COL: CONTENT (8/12) -->
+      <div class="lg:col-span-8 space-y-12">
+        
+        <!-- STATS -->
+        ${statsGrid}
 
-    ${infoBox}
-    ${statsGrid}
-    ${estrategia}
-    ${dropsGrid}
-    ${tipBox}
+        <!-- INFO BOX -->
+        ${data.infoBox ? `
+        <div class="bg-violet-600/5 border border-violet-500/20 rounded-3xl p-8 relative overflow-hidden">
+          <div class="absolute left-0 top-0 w-1.5 h-full bg-violet-600"></div>
+          <h3 class="text-xs font-rpg font-bold text-violet-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+             <span>📌</span> Sabiduría Inicial
+          </h3>
+          <p class="text-stone-300 leading-relaxed font-subtitle text-lg">${esc(data.infoBox)}</p>
+        </div>` : ""}
 
-    <div class="guide-footer">✦ Sabiduría del Clan Nightcore ✦</div>
+        <!-- STEPS -->
+        <div class="space-y-8">
+          <div class="flex items-center gap-4">
+             <div class="w-1.5 h-8 bg-violet-600 rounded-full"></div>
+             <h3 class="text-xl font-bold text-white font-rpg uppercase tracking-[0.3em]">Estrategia</h3>
+          </div>
+          
+          ${data.warningBox ? `
+          <div class="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 text-red-200 text-sm font-bold font-rpg flex items-center gap-4">
+            <span class="text-2xl animate-pulse">⚠️</span>
+            <span class="tracking-widest uppercase">${esc(data.warningBox)}</span>
+          </div>` : ""}
+
+          <div class="space-y-8 bg-[#11131A]/40 border border-white/5 rounded-[2.5rem] p-10">
+            ${steps}
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COL: SIDEBAR (4/12) -->
+      <div class="lg:col-span-4 space-y-12">
+        
+        <!-- DROPS -->
+        <div class="space-y-6">
+          <h3 class="text-xs font-rpg font-bold text-orange-400 uppercase tracking-[0.3em] px-2 flex items-center gap-3">
+            <span>💰</span> Drops destacados
+          </h3>
+          <div class="space-y-4">
+            ${dropsGrid}
+          </div>
+        </div>
+
+        <!-- TIP BOX -->
+        ${data.tipBox ? `
+        <div class="bg-green-500/5 border border-green-500/20 rounded-3xl p-8 relative overflow-hidden">
+          <div class="absolute left-0 top-0 w-1.5 h-full bg-green-500"></div>
+          <h3 class="text-xs font-rpg font-bold text-green-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-3">
+             <span>🧠</span> El Consejo Final
+          </h3>
+          <p class="text-stone-300 text-sm leading-relaxed font-subtitle italic">${esc(data.tipBox)}</p>
+        </div>` : ""}
+
+        <!-- META -->
+        <div class="bg-[#11131A]/60 border border-white/5 rounded-3xl p-8 text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-stone-800 border border-white/10 flex items-center justify-center text-stone-400 text-2xl font-bold font-rpg mx-auto">
+            ${author[0].toUpperCase()}
+          </div>
+          <div>
+            <p class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1">Escrito por</p>
+            <p class="text-white font-rpg font-bold uppercase tracking-widest">${esc(author)}</p>
+          </div>
+          <div class="pt-4 border-t border-white/5">
+            <p class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1">Fecha de Registro</p>
+            <p class="text-stone-400 font-mono text-xs">${esc(date)}</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="mt-20 py-10 border-t border-white/5 text-center">
+      <p class="text-[9px] font-rpg tracking-[0.5em] text-stone-700 uppercase">✦ Sabiduría del Clan Nightcore ✦</p>
+    </div>
   `;
 }
 
@@ -351,57 +224,80 @@ guias.get("/", async (c) => {
 
   const cards =
     list.length === 0
-      ? `<p class="text-stone-500 text-center py-20 italic">Aún no hay pergaminos escritos en esta biblioteca.</p>`
+      ? `<div class="py-24 text-center space-y-4">
+          <div class="text-6xl opacity-20">📖</div>
+          <p class="text-stone-600 font-rpg uppercase tracking-[0.4em] text-[10px]">Biblioteca de Pergaminos Vacía</p>
+        </div>`
       : list.map((g) => {
           let emoji = "📖";
-          let category = "";
+          let category = "Guía";
+          let subtitle = "";
           let imgSrc = "";
-          let badges: {label: string; color: string}[] = [];
+          let badgesHtml = "";
           try {
             const d = JSON.parse(g.content);
             if (d.bossEmoji) emoji = d.bossEmoji;
             if (d.category) category = d.category;
+            subtitle = d.subtitle || "";
             imgSrc = d.imageBase64 || d.imageUrl || "";
-            if (d.badges) badges = d.badges;
-          } catch { /* ... */ }
+            
+            const badges = (d.badges || []).slice(0, 3).map((b: any) => `
+              <span class="px-2 py-0.5 rounded border text-[8px] font-rpg font-bold tracking-widest uppercase ${badgeColorMap[b.color] || badgeColorMap.yellow}">
+                ${esc(b.label)}
+              </span>`).join("");
+            if (badges) badgesHtml = `<div class="flex flex-wrap gap-2 mt-3">${badges}</div>`;
+          } catch { }
 
           const thumb = imgSrc
-            ? `<img src="${esc(imgSrc)}" alt="${esc(g.title)}" class="w-20 h-20 rounded-2xl object-cover object-center border border-yellow-900/30 flex-shrink-0 shadow-xl" />`
-            : `<div class="w-20 h-20 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center text-4xl flex-shrink-0 shadow-lg">${esc(emoji)}</div>`;
-
-          const renderedBadges = badges.map(b => `
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border ${badgeColorMap[b.color] || badgeColorMap.gold} font-rpg uppercase tracking-tighter">
-              ${esc(b.label)}
-            </span>`).join("");
+            ? `<div class="relative flex-shrink-0">
+                 <div class="absolute -inset-2 bg-violet-600/10 blur-lg rounded-full"></div>
+                 <img src="${esc(imgSrc)}" class="w-24 h-24 rounded-2xl object-contain bg-[#0B0D13] border border-white/10 relative z-10" />
+               </div>`
+            : `<div class="w-24 h-24 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-4xl flex-shrink-0 shadow-inner">${esc(emoji)}</div>`;
 
           return `
             <a href="/guias/${esc(g.slug)}"
-              class="flex flex-col sm:flex-row items-center gap-6 bg-stone-900/40 border border-yellow-900/10 rounded-2xl p-6 hover:border-yellow-600/50 transition group hover:-translate-y-1 hover:shadow-2xl hover:shadow-yellow-900/20 duration-300">
-              ${thumb}
-              <div class="flex-1 text-center sm:text-left">
-                ${category ? `<p class="text-[10px] text-yellow-600 uppercase font-rpg tracking-[0.3em] mb-2">${esc(category)}</p>` : ""}
-                <h3 class="font-bold text-white text-xl mb-2 group-hover:text-yellow-500 transition font-rpg uppercase tracking-wider">${esc(g.title)}</h3>
-                <div class="flex flex-wrap justify-center sm:justify-start gap-2 mb-3">${renderedBadges}</div>
-                <p class="text-stone-500 text-xs font-rpg uppercase tracking-widest">Escrito por ${esc(g.author)} · ${g.created_at.slice(0, 10)}</p>
+              class="group flex flex-col md:flex-row items-center gap-8 bg-[#11131A]/40 border border-white/5 rounded-[2.5rem] p-8 hover:bg-white/5 hover:border-violet-500/30 transition-all duration-500 relative overflow-hidden shadow-2xl">
+              <div class="absolute -right-8 -bottom-8 text-8xl opacity-[0.02] rotate-12 pointer-events-none group-hover:scale-110 transition-transform">${emoji}</div>
+              
+              <div class="flex-shrink-0 relative">
+                 <div class="absolute -inset-2 bg-violet-600/5 blur-xl rounded-full group-hover:bg-violet-600/10 transition-all"></div>
+                 ${thumb}
               </div>
-              <div class="text-yellow-600 opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-2 hidden sm:block">
-                <span class="text-2xl">→</span>
+              
+              <div class="flex-1 text-center md:text-left min-w-0">
+                <p class="text-[9px] text-violet-500/70 uppercase font-rpg tracking-[0.4em] mb-2 font-bold">${esc(category || "Pergamino")}</p>
+                <h3 class="font-bold text-white text-3xl group-hover:text-violet-400 transition-all font-rpg tracking-wider">${esc(g.title)}</h3>
+                <p class="text-stone-500 text-sm italic font-subtitle mt-2 line-clamp-1 truncate">${esc(subtitle)}</p>
+                ${badgesHtml}
+              </div>
+              
+              <div class="flex flex-col items-center md:items-end gap-2 text-right">
+                <span class="text-[9px] font-rpg font-bold text-stone-600 uppercase tracking-widest">Escrito por ${esc(g.author)}</span>
+                <span class="text-[9px] font-mono text-stone-700 font-bold tracking-tighter">${g.created_at.slice(0, 10)}</span>
+              </div>
+
+              <div class="hidden md:block">
+                 <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-stone-700 border border-white/5 group-hover:bg-violet-600 group-hover:text-white transition-all">
+                    <span class="text-xl">→</span>
+                 </div>
               </div>
             </a>`;
         }).join("");
 
   const content = `
-    <div class="max-w-4xl mx-auto">
-      <div class="mb-16 text-center relative py-12">
-        <h1 class="text-5xl font-bold text-white font-rpg tracking-[0.2em] uppercase drop-shadow-2xl">Biblioteca</h1>
-        <p class="text-yellow-700 mt-4 font-rpg text-xs tracking-[0.4em] uppercase opacity-70">El conocimiento es el arma más poderosa del guerrero</p>
+    <div class="max-w-5xl mx-auto">
+      <div class="mb-20 text-center py-10 relative">
+        <div class="absolute inset-0 bg-violet-600/5 blur-[100px] -z-10"></div>
+        <h1 class="text-6xl font-bold text-white font-rpg tracking-tighter uppercase drop-shadow-2xl">PERGAMINOS</h1>
+        <p class="text-stone-600 mt-4 font-rpg text-[10px] tracking-[0.5em] uppercase font-bold">Biblioteca de Pergaminos</p>
       </div>
-      <div class="grid gap-6">${cards}</div>
+      <div class="space-y-8">${cards}</div>
     </div>
   `;
 
   const user = c.get("user");
-  return c.html(publicLayout("Biblioteca de Guías", content, user));
+  return c.html(publicLayout("Biblioteca de Pergaminos", content, user));
 });
 
 guias.get("/:slug", async (c) => {
@@ -424,16 +320,15 @@ guias.get("/:slug", async (c) => {
     const DOMPurify = (await import("npm:isomorphic-dompurify")).default;
     const html = DOMPurify.sanitize(await marked(g.content));
     rendered = `
-      <a href="/guias" class="btn-back">← Volver a los Pergaminos</a>
-      <div class="bg-stone-900/60 border border-yellow-900/20 rounded-3xl p-10 shadow-2xl">
-        <h1 class="text-4xl font-bold text-white mb-4 font-rpg tracking-wider uppercase">${esc(g.title)}</h1>
-        <p class="text-stone-500 text-xs mb-10 font-rpg uppercase tracking-widest">Escrito por ${esc(g.author)} · ${g.created_at.slice(0, 10)}</p>
-        <div class="prose max-w-none text-stone-300 leading-relaxed">${html}</div>
+      <a href="/guias" class="inline-flex items-center gap-3 text-[10px] text-stone-500 hover:text-violet-400 font-rpg font-bold uppercase tracking-[0.3em] transition-all mb-12">← Volver</a>
+      <div class="bg-[#11131A]/60 border border-white/5 rounded-[2.5rem] p-12 shadow-2xl">
+        <h1 class="text-4xl font-bold text-white mb-6 font-rpg tracking-wider uppercase">${esc(g.title)}</h1>
+        <div class="prose prose-invert max-w-none text-stone-300 leading-relaxed">${html}</div>
       </div>
     `;
   }
 
-  const content = `<div class="max-w-4xl mx-auto">${rendered}</div>`;
+  const content = `<div class="max-w-6xl mx-auto px-4 md:px-0">${rendered}</div>`;
   const user = c.get("user");
   return c.html(publicLayout(g.title, content, user));
 });

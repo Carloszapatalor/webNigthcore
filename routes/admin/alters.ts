@@ -70,45 +70,46 @@ alters.get("/", async (c) => {
 
   const rows =
     alterList.length === 0
-      ? `<tr><td colspan="7" class="py-12 text-center text-stone-600 text-sm italic font-rpg uppercase tracking-widest">No hay alters registrados aún</td></tr>`
+      ? `<tr><td colspan="6" class="py-20 text-center text-stone-700 text-[10px] italic font-rpg uppercase tracking-[0.5em]">No hay alters registrados aún</td></tr>`
       : alterList.map((m) => {
           const rpg = rpgMap.get(m.memberName.toLowerCase());
-          const offline = Number(m.hoursOffline);
-          const isInvalid = isNaN(offline) || m.hoursOffline === null || offline < 0;
-          const offlineText = isInvalid ? "—" : `${Math.round(offline)}h`;
-          const offlineColor = offline > 72 ? "text-red-400" : offline > 48 ? "text-yellow-400" : "text-stone-400";
           const rankLabel = RANK_LABELS[m.rank] ?? `Rango ${m.rank}`;
 
           return `
-    <tr class="border-b border-yellow-900/10 hover:bg-stone-800/40 transition text-sm">
-      <td class="py-4 px-6 font-bold text-stone-200">${esc(m.memberName)}</td>
-      <td class="py-4 px-6 text-yellow-600 font-rpg text-[10px] uppercase tracking-widest italic">← ${esc(m.mainUsername)}</td>
-      <td class="py-4 px-6 text-stone-500 font-rpg text-[10px] uppercase tracking-widest">${esc(rankLabel)}</td>
-      <td class="py-4 px-6 text-purple-400 font-rpg text-[10px] uppercase tracking-widest">${rpg ? rpg.title : "—"}</td>
-      <td class="py-4 px-6 text-center text-stone-300 font-rpg">${rpg ? rpg.level : "—"}</td>
-      <td class="py-4 px-6 text-right font-mono text-cyan-400 text-xs">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
+    <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
+      <td class="py-5 px-8 font-bold text-white font-rpg tracking-widest text-sm uppercase">${esc(m.memberName)}</td>
+      <td class="py-5 px-6 text-violet-400 font-rpg text-[10px] uppercase tracking-widest font-bold drop-shadow-[0_0_8px_rgba(139,92,246,0.3)]">← ${esc(m.mainUsername)}</td>
+      <td class="py-5 px-6 text-stone-500 font-rpg text-[9px] uppercase tracking-widest font-bold">${esc(rankLabel)}</td>
+      <td class="py-5 px-6 text-pink-400 font-rpg text-[9px] uppercase tracking-[0.2em] font-bold">${rpg ? rpg.title : "—"}</td>
+      <td class="py-5 px-6 text-center text-stone-300 font-rpg text-xs">${rpg ? rpg.level : "—"}</td>
+      <td class="py-5 px-8 text-right font-mono text-cyan-400 text-xs font-bold drop-shadow-[0_0_8px_rgba(34,211,238,0.3)]">${rpg ? Number(rpg.week_exp).toLocaleString() : "—"}</td>
     </tr>`;
         }).join("");
 
   const content = `
-    <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
-      <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
-        <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500">👥 Alters del Clan</h2>
-        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">${alterList.length} alters detectados</span>
+    <div class="glass-panel overflow-hidden">
+      <div class="px-10 py-8 border-b border-white/5 flex items-center justify-between bg-black/20">
+        <div class="flex items-center gap-4">
+          <div class="w-1.5 h-6 bg-violet-600 rounded-full shadow-[0_0_10px_rgba(139,92,246,1)]"></div>
+          <h2 class="font-bold font-rpg uppercase tracking-[0.3em] text-sm text-white">Cuentas Secundarias (Alters)</h2>
+        </div>
+        <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-[0.2em] font-bold bg-black/40 px-3 py-1 rounded-full">${alterList.length} Detectados</span>
       </div>
-      <table class="w-full">
-        <thead>
-          <tr class="text-[10px] text-stone-600 uppercase border-b border-yellow-900/5 bg-black/10">
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Alter</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Cuenta Principal</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Rango</th>
-            <th class="py-4 px-6 text-left font-rpg tracking-widest">Título RPG</th>
-            <th class="py-4 px-6 text-center font-rpg tracking-widest">Nivel</th>
-            <th class="py-4 px-6 text-right font-rpg tracking-widest">EXP Semanal</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="text-[9px] text-stone-600 uppercase font-rpg tracking-[0.4em] bg-white/5 border-b border-white/5">
+              <th class="py-6 px-8 text-left">Alter</th>
+              <th class="py-6 px-6 text-left">Cuenta Principal</th>
+              <th class="py-6 px-6 text-left">Rango</th>
+              <th class="py-6 px-6 text-left">Título RPG</th>
+              <th class="py-6 px-6 text-center">Nivel</th>
+              <th class="py-6 px-8 text-right">EXP Semanal</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">${rows}</tbody>
+        </table>
+      </div>
     </div>
   `;
 
