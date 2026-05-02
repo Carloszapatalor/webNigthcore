@@ -180,8 +180,9 @@ miembros.get("/", async (c) => {
 
 import { syncClanMembers } from "../../lib/members.ts";
 
-miembros.post("/sync", async (c) => {
-  await syncClanMembers();
+miembros.post("/sync", (c) => {
+  // Lanzar en background — responde inmediatamente al admin
+  syncClanMembers().catch(e => console.error("Background sync error:", e));
   return c.redirect("/admin/miembros?synced=1");
 });
 

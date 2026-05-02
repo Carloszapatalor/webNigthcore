@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../lib/turso.ts";
 import { publicLayout, esc } from "../views/layout.ts";
+import { fetchWithTimeout } from "../lib/cache.ts";
 
 function getWeekStart(): string {
   const d = new Date();
@@ -29,16 +30,23 @@ interface ClanLog {
 let cachedQuestsRanking: [string, { combat: number; skilling: number; total: number }][] = [];
 let cachedClanStats: Record<string, number> = {};
 let lastCacheUpdate = 0;
+let cacheUpdateInProgress = false;
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
+const API_TIMEOUT = 6000; // 6 segundos máximo por llamada a API externa
 
 async function updateHomeCache() {
+  if (cacheUpdateInProgress) return; // Evita llamadas concurrentes duplicadas
+  cacheUpdateInProgress = true;
   const clanName = Deno.env.get("CLAN_NAME") || "Nightcore";
   console.log("Actualizando caché de Home (API pública)...");
 
   try {
     const today = getTodayUTC();
     const ranking: Record<string, { combat: number; skilling: number; total: number }> = {};
-    const resLogs = await fetch(`https://query.idleclans.com/api/Clan/logs/clan/${encodeURIComponent(clanName)}?skip=0&limit=100`);
+    const resLogs = await fetchWithTimeout(
+      `https://query.idleclans.com/api/Clan/logs/clan/${encodeURIComponent(clanName)}?skip=0&limit=100`,
+      API_TIMEOUT,
+    );
     if (!resLogs.ok) throw new Error(`API Logs returned ${resLogs.status}`);
     const logsText = await resLogs.text();
     let logs: ClanLog[];
@@ -71,7 +79,10 @@ async function updateHomeCache() {
   }
 
   try {
-    const clanRes = await fetch(`https://query.idleclans.com/api/Clan/recruitment/${encodeURIComponent(clanName)}`);
+    const clanRes = await fetchWithTimeout(
+      `https://query.idleclans.com/api/Clan/recruitment/${encodeURIComponent(clanName)}`,
+      API_TIMEOUT,
+    );
     if (!clanRes.ok) throw new Error(`API Recruitment returned ${clanRes.status}`);
     const clanText = await clanRes.text();
     let clanData;
@@ -88,6 +99,7 @@ async function updateHomeCache() {
   }
 
   lastCacheUpdate = Date.now();
+  cacheUpdateInProgress = false;
 }
 
 const home = new Hono();
@@ -97,12 +109,9 @@ home.get("/", async (c) => {
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
+  // Stale-while-revalidate: sirve siempre de caché y refresca en background
   if (Date.now() - lastCacheUpdate > CACHE_TTL) {
-    if (lastCacheUpdate === 0) {
-      await updateHomeCache();
-    } else {
-      updateHomeCache();
-    }
+    updateHomeCache().catch(e => console.error("Home cache update error:", e));
   }
 
   const [rankingResult, eventResult, membersResult, onlineResult, guidesResult] = await Promise.allSettled([
@@ -413,7 +422,8 @@ home.get("/", async (c) => {
     </div>
   `;
 
-  return c.html(publicLayout("Home", content));
+  const user = c.get("user");
+  return c.html(publicLayout("Home", content, user));
 });
 
 export default home;

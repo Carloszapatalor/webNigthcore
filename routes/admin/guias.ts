@@ -439,7 +439,7 @@ adminGuias.get("/:id/preview", async (c) => {
   if (result.rows.length === 0) return c.notFound();
   const g = result.rows[0] as unknown as { title: string; content: string; author: string; created_at: string };
   const rendered = renderGuide(g.title, JSON.parse(g.content), g.author, g.created_at.slice(0, 10));
-  return c.html(publicLayout(g.title, `<div class="max-w-4xl mx-auto">${rendered}</div>`));
+  return c.html(publicLayout(g.title, `<div class="max-w-4xl mx-auto">${rendered}</div>`, c.get("user")));
 });
 
 adminGuias.post("/nueva", async (c) => {

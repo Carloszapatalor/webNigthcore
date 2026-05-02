@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { deleteCookie, getCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { getTursoClient } from "../lib/turso.ts";
 import { comparePassword, hashPassword } from "../lib/hash.ts";
 import { signToken, verifyToken } from "../lib/auth.ts";
@@ -7,7 +7,13 @@ import { publicLayout, esc } from "../views/layout.ts";
 
 const auth = new Hono();
 
-auth.get("/login", (c) => {
+auth.get("/login", async (c) => {
+  const token = getCookie(c, "session");
+  if (token) {
+    const payload = await verifyToken(token);
+    if (payload) return c.redirect("/admin");
+  }
+
   const error = c.req.query("error");
   const content = `
     <div class="max-w-md mx-auto mt-20 px-4">
@@ -81,14 +87,15 @@ auth.post("/login", async (c) => {
     mcp: row.must_change_password === 1 ? true : undefined,
   });
 
-  const secure = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
-  const cookie = `session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24}${secure ? "; Secure" : ""}`;
-  const destination = row.must_change_password === 1 ? "/auth/change-password" : "/admin";
-
-  return new Response(null, {
-    status: 302,
-    headers: { Location: destination, "Set-Cookie": cookie },
+  setCookie(c, "session", token, {
+    httpOnly: true,
+    path: "/",
+    maxAge: 60 * 60 * 24,
+    sameSite: "Lax",
+    secure: Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined,
   });
+
+  return c.redirect(row.must_change_password === 1 ? "/auth/change-password" : "/admin");
 });
 
 auth.get("/change-password", async (c) => {
@@ -134,7 +141,7 @@ auth.get("/change-password", async (c) => {
       </div>
     </div>
   `;
-  return c.html(publicLayout("Cambiar secreto", content));
+  return c.html(publicLayout("Cambiar secreto", content, payload));
 });
 
 auth.post("/change-password", async (c) => {
@@ -163,13 +170,15 @@ auth.post("/change-password", async (c) => {
 
   // Re-emitir JWT sin el flag mcp
   const newToken = await signToken({ sub: payload.sub, username: payload.username, role: payload.role });
-  const secure = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
-  const cookie = `session=${newToken}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${60 * 60 * 24}${secure ? "; Secure" : ""}`;
-
-  return new Response(null, {
-    status: 302,
-    headers: { Location: "/admin", "Set-Cookie": cookie },
+  setCookie(c, "session", newToken, {
+    httpOnly: true,
+    path: "/",
+    maxAge: 60 * 60 * 24,
+    sameSite: "Lax",
+    secure: Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined,
   });
+
+  return c.redirect("/admin");
 });
 
 auth.get("/logout", (c) => {

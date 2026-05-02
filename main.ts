@@ -33,12 +33,8 @@ setInterval(() => {
 // Ejecutar una vez al inicio
 syncClanMembers();
 
-// Rutas públicas
-app.use("/", optionalAuth);
-app.use("/guias", optionalAuth);
-app.use("/guias/*", optionalAuth);
-app.use("/jugadores", optionalAuth);
-app.use("/ausencias", optionalAuth);
+// Middleware global para estado de sesión
+app.use("*", optionalAuth);
 
 app.route("/", homeRoute);
 app.route("/guias", guiasRoute);

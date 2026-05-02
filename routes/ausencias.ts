@@ -47,7 +47,8 @@ ausencias.get("/", async (c) => {
       </div>
     </div>
   `;
-  return c.html(publicLayout("Aviso de Ausencia", content));
+  const user = c.get("user");
+  return c.html(publicLayout("Aviso de Ausencia", content, user));
 });
 
 ausencias.post("/", async (c) => {
@@ -73,7 +74,7 @@ ausencias.post("/", async (c) => {
         <p class="text-stone-400 mb-8 italic font-bold">No hemos encontrado a "${esc(name)}" en los registros oficiales del clan.</p>
         <a href="/ausencias" class="btn-primary px-8 py-4 rounded-xl font-bold font-rpg uppercase tracking-widest inline-block">Volver a intentar</a>
       </div>
-    `));
+    `, c.get("user")));
   }
 
   await db.execute({
@@ -88,7 +89,7 @@ ausencias.post("/", async (c) => {
       <p class="text-stone-500 mb-8 italic font-bold">Tu aviso de ausencia ha sido entregado al consejo. Diputado o el jefe de clan revisará tu solicitud pronto.</p>
       <a href="/" class="text-violet-500 hover:text-violet-400 font-rpg uppercase tracking-widest underline decoration-violet-900/30 underline-offset-8 transition-all font-bold">Volver al Portal</a>
     </div>
-  `));
+  `, c.get("user")));
 });
 
 export default ausencias;

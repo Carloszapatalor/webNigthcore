@@ -38,7 +38,7 @@ setup.get("/", async (c) => {
       </div>
     </div>
   `;
-  return c.html(publicLayout("Setup", content));
+  return c.html(publicLayout("Setup", content, c.get("user")));
 });
 
 setup.post("/", async (c) => {

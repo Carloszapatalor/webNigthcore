@@ -1,4 +1,5 @@
 import { getTursoClient } from "./turso.ts";
+import { fetchWithTimeout } from "./cache.ts";
 
 const IDLE_BASE = "https://query.idleclans.com";
 
@@ -12,7 +13,10 @@ export async function syncClanMembers() {
   }
 
   try {
-    const res = await fetch(`${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`);
+    const res = await fetchWithTimeout(
+      `${IDLE_BASE}/api/Clan/recruitment/${encodeURIComponent(clanName)}`,
+      8000,
+    );
     if (!res.ok) {
       const text = await res.text();
       console.error(`Sync error: API returned ${res.status} - ${text.slice(0, 50)}`);
@@ -36,16 +40,18 @@ export async function syncClanMembers() {
     const db = getTursoClient();
     const now = new Date().toISOString();
 
-    // Usamos una transacción o simplemente borramos y reinsertamos
     await db.execute(`DELETE FROM clan_members`);
 
     const memberlist = (data as { memberlist: RecruitmentMember[] }).memberlist;
-    
-    // Fetch offline status sequentially to avoid rate limits
+
+    // Fetch offline status con timeout y delay mínimo para no saturar la API
     const memberData = [];
     for (const m of memberlist) {
       try {
-        const profileRes = await fetch(`${IDLE_BASE}/api/Player/profile/simple/${encodeURIComponent(m.memberName)}`);
+        const profileRes = await fetchWithTimeout(
+          `${IDLE_BASE}/api/Player/profile/simple/${encodeURIComponent(m.memberName)}`,
+          5000,
+        );
         if (!profileRes.ok) {
           memberData.push({ ...m, hoursOffline: -1 });
           continue;
@@ -53,12 +59,13 @@ export async function syncClanMembers() {
         const profile = await profileRes.json();
         memberData.push({ ...m, hoursOffline: profile.hoursOffline ?? -1 });
       } catch {
+        // Timeout o error de red — no bloquear el resto de la sync
         memberData.push({ ...m, hoursOffline: -1 });
       }
-      // Pequeño delay de 50ms para no saturar la API
-      await new Promise(r => setTimeout(r, 50));
+      // Delay reducido a 30ms para bajar latencia total
+      await new Promise(r => setTimeout(r, 30));
     }
-    
+
     for (const m of memberData) {
       await db.execute({
         sql: `INSERT OR REPLACE INTO clan_members (member_name, rank, hours_offline, updated_at) VALUES (?, ?, ?, ?)`,
@@ -66,8 +73,9 @@ export async function syncClanMembers() {
       });
     }
 
-    console.log(`Sync successful: ${new Date().toLocaleString()}`);
+    console.log(`Sync successful: ${new Date().toLocaleString()} (${memberData.length} miembros)`);
   } catch (e) {
     console.error("Sync error:", (e as Error).message);
   }
 }
+
