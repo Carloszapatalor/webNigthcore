@@ -62,6 +62,7 @@ export function publicLayout(title: string, content: string, user?: User | null)
       <div class="flex items-center gap-6 text-sm font-rpg tracking-widest uppercase">
         <a href="/" class="text-stone-300 hover:text-yellow-500 transition">Inicio</a>
         <a href="/guias" class="text-stone-300 hover:text-yellow-500 transition">Guías</a>
+        <a href="/ausencias" class="text-stone-300 hover:text-yellow-500 transition">Ausencias</a>
         <a href="/jugadores" class="text-stone-300 hover:text-yellow-500 transition">Jugadores</a>
         ${loginButton}
       </div>
@@ -81,10 +82,11 @@ export function adminLayout(title: string, content: string, user: User, currentP
 
   if (user.role !== "escudero") {
     navItems.push({ href: "/admin/miembros", label: "Miembros", icon: "👥" });
-    navItems.push({ href: "/admin/whitelist", label: "Whitelist", icon: "🛡️" });
     navItems.push({ href: "/admin/reportes", label: "Reportes", icon: "📢" });
   }
 
+  navItems.push({ href: "/admin/whitelist", label: "Whitelist", icon: "🛡️" });
+  navItems.push({ href: "/admin/ausencias", label: "Ausencias", icon: "📥" });
   navItems.push({ href: "/admin/eventos", label: "Eventos", icon: "🎯" });
   navItems.push({ href: "/admin/guias", label: "Guías", icon: "📖" });
 

@@ -120,9 +120,9 @@ miembros.get("/", async (c) => {
           ${lastSync ? `<span class="text-[10px] text-stone-500 font-rpg uppercase tracking-widest">Sincronizado: ${lastSync}</span>` : ""}
           <span class="text-[10px] text-stone-400 font-rpg uppercase tracking-widest">${memberList.length} miembros</span>
           <form method="POST" action="/admin/miembros/sync">
-            <button type="submit"
-              class="text-[10px] font-rpg uppercase tracking-widest bg-yellow-700 hover:bg-yellow-600 text-stone-950 px-3 py-1.5 rounded-lg transition shadow-lg active:scale-95">
-              🔄 Actualizar
+            <button type="submit" title="La sincronización es automática cada 30 min. Usa esto solo si es urgente."
+              class="text-[10px] font-rpg uppercase tracking-widest bg-stone-800 border border-yellow-900/30 hover:bg-yellow-700 text-stone-300 hover:text-stone-950 px-3 py-1.5 rounded-lg transition shadow-lg active:scale-95">
+              🔄 Forzar Sync
             </button>
           </form>
         </div>

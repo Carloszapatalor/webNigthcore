@@ -13,6 +13,8 @@ import adminGuiasRoute from "./routes/admin/guias.ts";
 import usuariosRoute from "./routes/admin/usuarios.ts";
 import altersRoute from "./routes/admin/alters.ts";
 import reportesRoute from "./routes/admin/reportes.ts";
+import ausenciasRoute from "./routes/ausencias.ts";
+import adminAusenciasRoute from "./routes/admin/ausencias.ts";
 
 import { optionalAuth } from "./middleware/optionalAuth.ts";
 import { syncClanMembers } from "./lib/members.ts";
@@ -22,11 +24,11 @@ const app = new Hono();
 
 await initDb();
 
-// Sincronización automática de miembros cada 4 horas
+// Sincronización automática de miembros cada 30 minutos
 setInterval(() => {
-  console.log("Iniciando sincronización automática...");
+  console.log("Iniciando sincronización automática (30m)...");
   syncClanMembers();
-}, 4 * 60 * 60 * 1000);
+}, 30 * 60 * 1000);
 
 // Ejecutar una vez al inicio
 syncClanMembers();
@@ -36,10 +38,12 @@ app.use("/", optionalAuth);
 app.use("/guias", optionalAuth);
 app.use("/guias/*", optionalAuth);
 app.use("/jugadores", optionalAuth);
+app.use("/ausencias", optionalAuth);
 
 app.route("/", homeRoute);
 app.route("/guias", guiasRoute);
 app.route("/jugadores", jugadoresRoute);
+app.route("/ausencias", ausenciasRoute);
 app.route("/auth", authRoute);
 app.route("/setup", setupRoute);
 
@@ -54,6 +58,7 @@ admin.route("/guias", adminGuiasRoute);
 admin.route("/usuarios", usuariosRoute);
 admin.route("/alters", altersRoute);
 admin.route("/reportes", reportesRoute);
+admin.route("/ausencias", adminAusenciasRoute);
 
 app.route("/admin", admin);
 

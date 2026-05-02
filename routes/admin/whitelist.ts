@@ -6,13 +6,14 @@ const whitelist = new Hono();
 
 whitelist.get("/", async (c) => {
   const user = c.get("user");
-  if (user.role === "escudero") return c.redirect("/admin");
   const db = getTursoClient();
   const result = await db.execute(
     `SELECT username, reason, added_at FROM inactivity_whitelist ORDER BY added_at DESC`
   );
   type WlRow = { username: string; reason: string | null; added_at: string };
   const list = result.rows as unknown as WlRow[];
+
+  const isEscudero = user.role === "escudero";
 
   const rows =
     list.length === 0
@@ -25,10 +26,12 @@ whitelist.get("/", async (c) => {
         <td class="py-4 px-6 text-stone-400 italic">${r.reason ? esc(r.reason) : "—"}</td>
         <td class="py-4 px-6 text-stone-600 font-mono text-xs">${r.added_at}</td>
         <td class="py-4 px-6 text-right">
+          ${!isEscudero ? `
           <form method="POST" action="/admin/whitelist/quitar">
             <input type="hidden" name="username" value="${esc(r.username)}" />
             <button type="submit" class="text-[10px] font-rpg uppercase tracking-widest text-red-400 hover:text-red-300 transition">Quitar</button>
           </form>
+          ` : ""}
         </td>
       </tr>`
           )
@@ -41,6 +44,7 @@ whitelist.get("/", async (c) => {
     ${error ? `<div class="bg-red-900/20 border border-red-800/50 text-red-400 text-xs rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">${esc(error)}</div>` : ""}
     ${ok ? `<div class="bg-green-900/20 border border-green-800/50 text-green-400 text-xs rounded-xl px-4 py-3 mb-6 font-rpg uppercase tracking-widest">✓ Pergamino actualizado correctamente</div>` : ""}
 
+    ${!isEscudero ? `
     <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl p-8 mb-10 shadow-xl relative overflow-hidden">
       <div class="absolute -right-10 -top-10 text-9xl opacity-[0.03] pointer-events-none">🛡️</div>
       <h2 class="font-bold font-rpg uppercase tracking-[0.2em] text-sm text-yellow-500 mb-6">🛡️ Otorgar Inmunidad</h2>
@@ -55,6 +59,7 @@ whitelist.get("/", async (c) => {
         </button>
       </form>
     </div>
+    ` : ""}
 
     <div class="bg-stone-900/60 border border-yellow-900/20 rounded-2xl overflow-hidden shadow-2xl">
       <div class="px-8 py-5 border-b border-yellow-900/10 flex items-center justify-between bg-black/20">
@@ -79,6 +84,9 @@ whitelist.get("/", async (c) => {
 });
 
 whitelist.post("/anadir", async (c) => {
+  const user = c.get("user");
+  if (user.role === "escudero") return c.redirect("/admin/whitelist");
+
   const body = await c.req.parseBody();
   const username = String(body.username ?? "").trim();
   const reason = String(body.reason ?? "").trim() || null;
@@ -96,6 +104,9 @@ whitelist.post("/anadir", async (c) => {
 });
 
 whitelist.post("/quitar", async (c) => {
+  const user = c.get("user");
+  if (user.role === "escudero") return c.redirect("/admin/whitelist");
+
   const body = await c.req.parseBody();
   const username = String(body.username ?? "").trim();
 
