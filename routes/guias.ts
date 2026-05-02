@@ -111,7 +111,7 @@ export function renderGuide(title: string, data: GuideData, author: string, date
             <div class="inline-block px-4 py-1.5 bg-violet-600/10 border border-violet-500/30 rounded-lg text-[10px] font-rpg font-bold tracking-[0.4em] text-violet-400 uppercase">
               ${esc(data.category || "Pergamino")}
             </div>
-            <h2 class="text-5xl md:text-6xl font-bold text-white font-rpg tracking-tighter leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+            <h2 class="text-3xl sm:text-5xl md:text-6xl font-bold text-white font-rpg tracking-tighter leading-tight drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
               ${esc(title)}
             </h2>
             <p class="text-stone-500 font-subtitle text-lg italic max-w-xl">

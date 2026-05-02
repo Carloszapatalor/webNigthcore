@@ -251,7 +251,7 @@ home.get("/", async (c) => {
           <span class="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,1)]"></span>
           Clan Nightcore
         </div>
-        <h2 class="text-6xl md:text-8xl font-bold text-white font-rpg tracking-tighter leading-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">NIGHTCORE</h2>
+        <h2 class="text-4xl sm:text-6xl md:text-8xl font-bold text-white font-rpg tracking-tighter leading-tight drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">NIGHTCORE</h2>
         <p class="text-stone-500 font-subtitle text-lg max-w-2xl mx-auto leading-relaxed">
           "En la oscuridad forjamos nuestro legado. La lealtad es nuestra armadura, la persistencia nuestra espada." 
       </div>
