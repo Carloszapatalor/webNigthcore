@@ -5,7 +5,7 @@ import { cacheGetStale, cacheSet } from "../lib/cache.ts";
 
 // ─── Tipos ───────────────────────────────────────────────────────────────
 
-export interface StatField   { label: string; value: string; color: string }
+export interface StatField   { label: string; value: string; color: string; emoji?: string }
 export interface DropField   { icon: string; name: string; rate: string; rare: boolean }
 export interface StepField   { text: string }
 
@@ -63,7 +63,7 @@ export function renderGuide(title: string, data: GuideData, author: string, date
   const statsGrid = (data.stats ?? []).length > 0 ? `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
       ${data.stats.map(s => {
-        const icon = statIconMap[s.label.toUpperCase()] || "📊";
+        const icon = s.emoji || statIconMap[s.label.toUpperCase()] || "📊";
         return `
         <div class="bg-black/40 border border-white/5 rounded-[2rem] p-6 text-center hover:border-violet-500/30 transition-all duration-300 group hover:bg-white/5 shadow-inner">
           <div class="text-2xl mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${icon}</div>

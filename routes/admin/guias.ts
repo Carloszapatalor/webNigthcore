@@ -16,7 +16,7 @@ function toSlug(title: string): string {
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-interface StatField { label: string; value: string; color: string }
+interface StatField { label: string; value: string; color: string; emoji?: string }
 interface DropField { icon: string; name: string; rate: string; rare: boolean }
 interface StepField { text: string }
 
@@ -52,14 +52,18 @@ const RPG_ICONS = [
 // ─── Helpers de formulario ────────────────────────────────────────────────────
 
 function iconSelector(name: string, selectedIcon: string): string {
+  const id = `emoji-${name}-${Math.random().toString(36).slice(2, 8)}`;
   return `
-    <div class="relative group">
-      <select name="${name}" class="w-full bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider appearance-none cursor-pointer transition-all duration-300">
-        ${RPG_ICONS.map(i => `<option value="${i.icon}" ${selectedIcon === i.icon ? "selected" : ""}>${i.icon} ${i.label}</option>`).join("")}
-      </select>
-      <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-stone-600 group-hover:text-violet-400 transition-colors">
-        <span class="text-[10px]">▼</span>
-      </div>
+    <div class="relative">
+      <input type="text" name="${name}" value="${esc(selectedIcon)}" 
+        placeholder="📜" maxlength="2" id="${id}"
+        class="emoji-input w-full bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-center text-xl focus:border-violet-500 focus:outline-none transition-all duration-300"
+        onfocus="showEmojiDropdown('${id}')" 
+        oninput="hideEmojiDropdown('${id}')" 
+        onblur="setTimeout(() => hideEmojiDropdown('${id}'), 200)" />
+    </div>
+    <div id="${id}-dropdown" class="hidden fixed bg-[#0B0D13] border border-white/10 rounded-xl max-h-48 overflow-y-auto z-[9999] emoji-dropdown" style="width: 200px;">
+      ${RPG_ICONS.map(i => `<div class="px-4 py-2 hover:bg-white/10 cursor-pointer flex items-center gap-3" onclick="selectEmoji('${id}', '${i.icon}')">${i.icon} <span class="text-stone-500 text-sm">${i.label}</span></div>`).join("")}
     </div>
   `;
 }
@@ -92,17 +96,35 @@ function statsInputs(stats: StatField[]): string {
     { v: "yellow", l: "Amarillo" }, { v: "blue", l: "Azul" }, { v: "purple", l: "Morado" }
   ];
 
+  const statEmojis = [
+    { icon: "❤️", label: "HP" }, { icon: "⚔️", label: "Daño" }, { icon: "🛡️", label: "Defensa" },
+    { icon: "⚡", label: "Velocidad" }, { icon: "🪄", label: "Magia" }, { icon: "🔥", label: "Fuego" },
+    { icon: "💎", label: "Recurso" }, { icon: "🪙", label: "Oro" }, { icon: "📊", label: "Stat" }, { icon: "✨", label: "Especial" }
+  ];
+
   return Array.from({ length: 4 }, (_, i) => {
-    const s = stats[i] ?? { label: "", value: "", color: "default" };
+    const s = stats[i] ?? { label: "", value: "", color: "default", emoji: "" };
+    const id = `stat-emoji-${i}-${Math.random().toString(36).slice(2, 8)}`;
     return `
-      <div class="grid grid-cols-3 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5">
+      <div class="grid grid-cols-4 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5">
+        <div class="relative">
+          <input type="text" name="stat_emoji_${i}" value="${esc(s.emoji ?? '')}" 
+            placeholder="📊" maxlength="2" id="${id}"
+            class="emoji-input w-full bg-[#0B0D13] border border-white/10 rounded-xl px-2 py-2.5 text-center text-lg focus:border-violet-500 focus:outline-none"
+            onfocus="showEmojiDropdown('${id}')" 
+            oninput="hideEmojiDropdown('${id}')"
+            onblur="setTimeout(() => hideEmojiDropdown('${id}'), 200)" />
+        </div>
         <input name="stat_label_${i}" value="${esc(s.label)}" placeholder="Ataque"
-          class="bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider" />
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider" />
         <input name="stat_value_${i}" value="${esc(s.value)}" placeholder="99"
-          class="bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-wider" />
-        <select name="stat_color_${i}" class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-violet-400 font-bold focus:border-violet-500 focus:outline-none font-rpg uppercase cursor-pointer">
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-wider" />
+        <select name="stat_color_${i}" class="bg-[#0B0D13] border border-white/10 rounded-xl px-2 py-2.5 text-xs text-violet-400 font-bold focus:border-violet-500 focus:outline-none font-rpg uppercase cursor-pointer">
           ${colorOptions.map(c => `<option value="${c.v}" ${s.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
+      </div>
+      <div id="${id}-dropdown" class="hidden fixed bg-[#0B0D13] border border-white/10 rounded-xl max-h-32 overflow-y-auto z-[9999] emoji-dropdown" style="width: 100px;">
+        ${statEmojis.map(e => `<div class="px-3 py-1.5 hover:bg-white/10 cursor-pointer flex items-center justify-center text-sm" onclick="selectEmoji('${id}', '${e.icon}')">${e.icon}</div>`).join("")}
       </div>`;
   }).join("");
 }
@@ -280,23 +302,41 @@ function guideForm(title: string, data: GuideData | null, guideId: string | null
       </div>
 
       <!-- Acciones -->
-      <div class="flex flex-col md:flex-row items-center justify-between bg-[#11131A]/80 border border-white/5 p-10 rounded-[3rem] sticky bottom-6 z-50 shadow-[0_-20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-        <label class="flex items-center gap-4 cursor-pointer select-none group mb-6 md:mb-0">
-          <div class="relative flex items-center">
-            <input type="checkbox" name="published" value="1" ${data?.published ? "checked" : ""}
-              class="w-6 h-6 rounded-lg border-white/10 bg-[#0B0D13] accent-violet-600 cursor-pointer shadow-inner" />
-          </div>
-          <span class="text-[10px] text-stone-500 font-rpg uppercase tracking-[0.2em] group-hover:text-violet-400 transition-colors font-bold">Publicar pergamino</span>
-        </label>
+      <div class="flex flex-col md:flex-row items-center justify-between bg-[#11131A]/80 border border-white/5 p-10 rounded-[3rem] mt-10">
+        <input type="hidden" name="published" value="1" />
         
-        <div class="flex gap-6 w-full md:w-auto">
+        <div class="flex gap-4 w-full md:w-auto">
           <a href="/admin/guias" class="flex-1 md:flex-none text-center text-[10px] text-stone-500 hover:text-white px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold">Cancelar</a>
-          <button type="submit" class="btn-primary flex-1 md:flex-none px-12 py-4 rounded-2xl font-bold font-rpg uppercase tracking-[0.3em] transition-all duration-300 shadow-xl active:scale-95">
-            ${guideId ? "Sellar Pergamino" : "Escribir Pergamino"}
+          ${guideId ? `<a href="/admin/guias/${guideId}/preview" target="_blank" class="flex-1 md:flex-none text-center text-[10px] text-violet-400 hover:text-violet-300 px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold border border-violet-500/30 rounded-2xl">Visualizar</a>` : ""}
+          <button type="submit" class="btn-primary flex-1 md:flex-none px-12 py-4 rounded-2xl font-bold font-rpg uppercase tracking-[0.3em] transition-all duration-300 shadow-xl active:scale-95 bg-green-600 hover:bg-green-500">
+            ${guideId ? "Actualizar" : "Publicar"}
           </button>
         </div>
       </div>
     </form>
+    <script>
+function showEmojiDropdown(id) {
+  const input = document.getElementById(id);
+  const dropdown = document.getElementById(id + '-dropdown');
+  if (!input || !dropdown) return;
+  const rect = input.getBoundingClientRect();
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.top = (rect.bottom + 4) + 'px';
+  dropdown.classList.remove('hidden');
+}
+function hideEmojiDropdown(id) {
+  const dropdown = document.getElementById(id + '-dropdown');
+  if (dropdown) dropdown.classList.add('hidden');
+}
+function selectEmoji(id, emoji) {
+  const input = document.getElementById(id);
+  if (input) {
+    input.value = emoji;
+    input.focus();
+  }
+  hideEmojiDropdown(id);
+}
+    </script>
   `;
 }
 
@@ -312,6 +352,7 @@ function parseGuideData(body: Record<string, string>, imageBase64?: string): Gui
     label: body[`stat_label_${i}`] ?? "",
     value: body[`stat_value_${i}`] ?? "",
     color: body[`stat_color_${i}`] ?? "default",
+    emoji: body[`stat_emoji_${i}`] ?? "",
   })).filter(s => s.label.trim() !== "");
 
   const steps = Array.from({ length: 4 }, (_, i) => ({
@@ -326,7 +367,7 @@ function parseGuideData(body: Record<string, string>, imageBase64?: string): Gui
   })).filter(d => d.name.trim() !== "");
 
   return {
-    bossEmoji: body.bossEmoji ?? "📜", imageUrl: body.imageUrl ?? "", imageBase64: imageBase64 ?? body.imageBase64 ?? "",
+    bossEmoji: body.bossEmoji || "📜", imageUrl: body.imageUrl ?? "", imageBase64: imageBase64 ?? body.imageBase64 ?? "",
     category: body.category ?? "Guía de Boss", subtitle: body.subtitle ?? "", badges, infoBox: body.infoBox ?? "",
     stats, warningBox: body.warningBox ?? "", steps, drops, tipBox: body.tipBox ?? "",
   };
@@ -376,11 +417,18 @@ adminGuias.get("/", async (c) => {
           </td>
           <td class="py-6 px-8 text-stone-600 font-mono text-[10px] tracking-tighter">${g.created_at.slice(0, 10)}</td>
           <td class="py-6 px-8 text-right">
-            <div class="flex justify-end gap-6">
-              <a href="/admin/guias/${g.id}/editar" class="text-[9px] font-rpg font-bold uppercase tracking-[0.3em] text-violet-400 hover:text-violet-300 transition-all">Editar</a>
+            <div class="flex items-center justify-end gap-2">
+              <a href="/admin/guias/${g.id}/editar" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 border border-violet-500/30 hover:border-violet-500/50 rounded-lg transition-all">Editar</a>
               ${(user.role !== "escudero" || g.author === user.username) ? `
+              ${g.published ? `
+              <form method="POST" action="/admin/guias/${g.id}/despublicar" class="inline">
+                <button type="submit" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-orange-500 hover:text-orange-400 border border-orange-500/30 hover:border-orange-500/50 rounded-lg transition-all">Despublicar</button>
+              </form>` : `
+              <form method="POST" action="/admin/guias/${g.id}/publicar" class="inline">
+                <button type="submit" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-green-500 hover:text-green-400 border border-green-500/30 hover:border-green-500/50 rounded-lg transition-all">Publicar</button>
+              </form>`}
               <form method="POST" action="/admin/guias/${g.id}/borrar" class="inline" onsubmit="return confirm('¿Confirmar destrucción de protocolo?')">
-                <button type="submit" class="text-[9px] font-rpg font-bold uppercase tracking-[0.3em] text-red-500/70 hover:text-red-400 transition-all">Eliminar</button>
+                <button type="submit" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-red-500 hover:text-red-400 border border-red-500/30 hover:border-red-500/50 rounded-lg transition-all">Eliminar</button>
               </form>` : ""}
             </div>
           </td>
@@ -451,7 +499,7 @@ adminGuias.post("/nueva", async (c) => {
   const now = new Date().toISOString();
   await db.execute({
     sql: `INSERT INTO guides (id, slug, title, content, published, author, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [crypto.randomUUID(), toSlug(title), title, JSON.stringify(data), body.published === "1" ? 1 : 0, c.get("user").username, now, now],
+    args: [crypto.randomUUID(), toSlug(title), title, JSON.stringify(data), 1, c.get("user").username, now, now],
   });
   return c.redirect("/admin/guias?ok=1");
 });
@@ -477,7 +525,39 @@ adminGuias.post("/:id/editar", async (c) => {
   const data = parseGuideData(body as Record<string, string>, imageBase64);
   await getTursoClient().execute({
     sql: `UPDATE guides SET title = ?, slug = ?, content = ?, published = ?, updated_at = ? WHERE id = ?`,
-    args: [title, toSlug(title), JSON.stringify(data), body.published === "1" ? 1 : 0, new Date().toISOString(), id],
+    args: [title, toSlug(title), JSON.stringify(data), 1, new Date().toISOString(), id],
+  });
+  return c.redirect("/admin/guias?ok=1");
+});
+
+adminGuias.post("/:id/publicar", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const db = getTursoClient();
+  const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
+  if (check.rows.length === 0) return c.notFound();
+  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
+    return c.redirect("/admin/guias");
+  }
+  await db.execute({
+    sql: `UPDATE guides SET published = 1, updated_at = ? WHERE id = ?`,
+    args: [new Date().toISOString(), id],
+  });
+  return c.redirect("/admin/guias?ok=1");
+});
+
+adminGuias.post("/:id/despublicar", async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  const db = getTursoClient();
+  const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
+  if (check.rows.length === 0) return c.notFound();
+  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
+    return c.redirect("/admin/guias");
+  }
+  await db.execute({
+    sql: `UPDATE guides SET published = 0, updated_at = ? WHERE id = ?`,
+    args: [new Date().toISOString(), id],
   });
   return c.redirect("/admin/guias?ok=1");
 });
