@@ -3,12 +3,74 @@
  * Evita llamadas repetidas a la BD y a APIs externas costosas.
  */
 
+import { getTursoClient } from "./turso.ts";
+
 interface CacheEntry<T> {
   value: T;
   expiresAt: number;
 }
 
 const store = new Map<string, CacheEntry<unknown>>();
+
+let lastExpCalcTime = 0;
+const EXP_REFRESH_TTL = 10 * 60 * 1000; // 10 minutos
+
+export function getLastExpCalcTime(): number {
+  return lastExpCalcTime;
+}
+
+export function setLastExpCalcTime(time: number): void {
+  lastExpCalcTime = time;
+}
+
+export function shouldRefreshExp(): boolean {
+  return Date.now() - lastExpCalcTime > EXP_REFRESH_TTL;
+}
+
+/* Persisted cache in BD */
+export async function dbCacheGet<T>(key: string, maxAgeMs = 5 * 60 * 1000): Promise<T | undefined> {
+  try {
+    const db = getTursoClient();
+    const result = await db.execute({
+      sql: `SELECT value, updated_at FROM app_cache WHERE key = ?`,
+      args: [key],
+    });
+    if (result.rows.length === 0) return undefined;
+    const row = result.rows[0] as unknown as { value: string; updated_at: string };
+    const updatedAt = new Date(row.updated_at).getTime();
+    if (Date.now() - updatedAt > maxAgeMs) return undefined;
+    return JSON.parse(row.value) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function dbCacheSet<T>(key: string, value: T): Promise<void> {
+  try {
+    const db = getTursoClient();
+    await db.execute({
+      sql: `INSERT OR REPLACE INTO app_cache (key, value, updated_at) VALUES (?, ?, ?)`,
+      args: [key, JSON.stringify(value), new Date().toISOString()],
+    });
+  } catch {
+    // Silently fail
+  }
+}
+
+export async function dbCacheIsFresh(key: string, maxAgeMs = 5 * 60 * 1000): Promise<boolean> {
+  try {
+    const db = getTursoClient();
+    const result = await db.execute({
+      sql: `SELECT updated_at FROM app_cache WHERE key = ?`,
+      args: [key],
+    });
+    if (result.rows.length === 0) return false;
+    const updatedAt = new Date((result.rows[0] as any).updated_at).getTime();
+    return Date.now() - updatedAt <= maxAgeMs;
+  } catch {
+    return false;
+  }
+}
 
 /** Obtiene un valor del caché. Devuelve `undefined` si no existe o expiró. */
 export function cacheGet<T>(key: string): T | undefined {

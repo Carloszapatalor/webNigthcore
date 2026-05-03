@@ -56,7 +56,34 @@ export async function initDb() {
     )
   `);
 
-  // ── Índices de rendimiento ────────────────────────────────────────────────
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS rpg_players (
+      username   TEXT PRIMARY KEY,
+      total_exp  INTEGER NOT NULL DEFAULT 0,
+      level     INTEGER NOT NULL DEFAULT 1,
+      title     TEXT NOT NULL DEFAULT '🌱 Buscador',
+      last_updated TEXT NOT NULL
+    )
+  `);
+
+await db.execute(`
+    CREATE TABLE IF NOT EXISTS inactivity_whitelist (
+      username   TEXT PRIMARY KEY,
+      reason    TEXT,
+      added_at  TEXT NOT NULL
+    )
+  `);
+
+  // ── App Cache Persisted ─────────────────────────────────────────────
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS app_cache (
+      key       TEXT PRIMARY KEY,
+      value     TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+
+  // ── Índices de rendimiento ────────────────────────────────────────
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_rpg_daily_date     ON rpg_daily_exp (date)`).catch(() => {});
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_rpg_daily_username ON rpg_daily_exp (username)`).catch(() => {});
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_guides_published   ON guides (published, created_at DESC)`).catch(() => {});

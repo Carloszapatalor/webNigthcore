@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
-import { cacheGetStale, cacheSet } from "../../lib/cache.ts";
+import { cacheGetStale, cacheSet, cacheDelete, fetchWithTimeout, getLastExpCalcTime, setLastExpCalcTime, shouldRefreshExp } from "../../lib/cache.ts";
 
 function getTodayUTC(): string {
   return new Date().toISOString().slice(0, 10);
@@ -14,7 +14,14 @@ dashboard.get("/", async (c) => {
   const db = getTursoClient();
   const today = getTodayUTC();
 
-  // Try cache first (3 min TTL)
+  // Auto-refresh EXP cada 10 minutos (fire & forget)
+  if (shouldRefreshExp()) {
+    setLastExpCalcTime(Date.now());
+    fetchWithTimeout("https://botnightcore.kaywor.deno.net/rpg/calcular", 10000).catch(() => {});
+    cacheDelete("admin:dashboard");
+  }
+
+// Try memory cache first (3 min TTL)
   const cachedData = cacheGetStale<{
     todayExp: number; eventLabel: string; wlCount: number;
     guides: any[]; inactiveList: any[]; reportsList: any[];
@@ -24,7 +31,6 @@ dashboard.get("/", async (c) => {
   let guides: any[] = [], inactiveList: any[] = [], reportsList: any[] = [];
 
   if (cachedData) {
-    // Use cached data
     todayExp = cachedData.todayExp;
     eventLabel = cachedData.eventLabel;
     wlCount = cachedData.wlCount;
@@ -32,7 +38,6 @@ dashboard.get("/", async (c) => {
     inactiveList = cachedData.inactiveList;
     reportsList = cachedData.reportsList;
   } else {
-    // Fetch from DB and cache
     const [expResult, eventResult, wlResult, guidesResult, inactiveResult, reportsResult] = await Promise.allSettled([
       db.execute({
         sql: `SELECT COALESCE(SUM(total_exp), 0) as today_exp FROM rpg_daily_exp WHERE date = ?`,
@@ -59,7 +64,6 @@ dashboard.get("/", async (c) => {
     inactiveList = inactiveResult.status === "fulfilled" ? (inactiveResult.value.rows as any[]) : [];
     reportsList = reportsResult.status === "fulfilled" ? (reportsResult.value.rows as any[]) : [];
 
-    // Cache for future requests
     cacheSet("admin:dashboard", {
       todayExp, eventLabel, wlCount, guides, inactiveList, reportsList
     }, 3 * 60 * 1000);
