@@ -222,20 +222,19 @@ function guideForm(title: string, data: GuideData | null, guideId: string | null
           <div class="bg-black/20 border border-white/5 rounded-[2rem] p-8 space-y-6">
             <p class="text-[10px] font-bold text-stone-400 font-rpg uppercase tracking-[0.2em] mb-4">🖼️ Imagen</p>
             <div class="flex flex-col md:flex-row items-center gap-10">
-              ${d.imageBase64 || d.imageUrl ? `
-                <div class="relative group">
-                  <div class="absolute -inset-2 bg-violet-600/20 blur-xl rounded-full animate-pulse"></div>
-                  <img src="${esc(d.imageBase64 || d.imageUrl)}" class="w-40 h-40 rounded-[2rem] object-contain bg-[#0B0D13] border-2 border-violet-500/30 shadow-2xl relative z-10 transition group-hover:scale-105" />
-                </div>` : `
-                <div class="w-40 h-40 rounded-[2rem] bg-[#0B0D13] border-2 border-dashed border-stone-800 flex items-center justify-center text-stone-600 text-[10px] font-rpg uppercase text-center p-8 tracking-widest">Sin Imagen</div>`}
+              <div id="image-preview-container" class="relative group">
+                <div class="absolute -inset-2 bg-violet-600/20 blur-xl rounded-full animate-pulse hidden" id="image-preview-glow"></div>
+                <img id="image-preview" src="${esc(d.imageBase64 || d.imageUrl)}" class="${d.imageBase64 || d.imageUrl ? 'w-40 h-40 rounded-[2rem] object-contain bg-[#0B0D13] border-2 border-violet-500/30 shadow-2xl relative z-10 transition group-hover:scale-105' : 'hidden w-40 h-40 rounded-[2rem] object-contain bg-[#0B0D13] border-2 border-violet-500/30 shadow-2xl relative z-10'}" />
+                <div id="image-placeholder" class="w-40 h-40 rounded-[2rem] bg-[#0B0D13] border-2 border-dashed border-stone-800 flex items-center justify-center text-stone-600 text-[10px] font-rpg uppercase text-center p-8 tracking-widest ${d.imageBase64 || d.imageUrl ? 'hidden' : ''}">Sin Imagen</div>
+              </div>
               
               <div class="flex-1 space-y-4 w-full">
                 <div>
                   <label class="text-[9px] text-stone-600 font-bold font-rpg uppercase tracking-widest mb-2 block">Vínculo Externo (URL)</label>
-                  <input name="imageUrl" value="${esc(d.imageUrl)}" placeholder="https://..." class="${fieldClass}" />
+                  <input name="imageUrl" id="image-url" value="${esc(d.imageUrl)}" placeholder="https://..." class="${fieldClass}" oninput="updateImagePreview()" />
                 </div>
                 <div class="relative">
-                  <input type="file" name="imageFile" accept="image/*" class="hidden" id="file-upload" />
+                  <input type="file" name="imageFile" accept="image/*" class="hidden" id="file-upload" onchange="handleImageUpload(this)" />
                   <label for="file-upload" class="flex items-center justify-center gap-3 bg-violet-600/10 border border-violet-500/30 rounded-2xl px-6 py-4 text-violet-400 font-bold text-[10px] font-rpg uppercase tracking-[0.2em] cursor-pointer hover:bg-violet-600/20 transition shadow-xl active:scale-95 w-full">
                     <span>📁 Subir Imagen</span>
                   </label>
@@ -302,13 +301,13 @@ function guideForm(title: string, data: GuideData | null, guideId: string | null
       </div>
 
       <!-- Acciones -->
-      <div class="flex flex-col md:flex-row items-center justify-between bg-[#11131A]/80 border border-white/5 p-10 rounded-[3rem] mt-10">
+      <div class="flex flex-col md:flex-row items-center justify-end bg-[#11131A]/80 border border-white/5 p-10 rounded-[3rem] mt-10">
         <input type="hidden" name="published" value="1" />
         
-        <div class="flex gap-4 w-full md:w-auto">
-          <a href="/admin/guias" class="flex-1 md:flex-none text-center text-[10px] text-stone-500 hover:text-white px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold">Cancelar</a>
-          ${guideId ? `<a href="/admin/guias/${guideId}/preview" target="_blank" class="flex-1 md:flex-none text-center text-[10px] text-violet-400 hover:text-violet-300 px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold border border-violet-500/30 rounded-2xl">Visualizar</a>` : ""}
-          <button type="submit" class="btn-primary flex-1 md:flex-none px-12 py-4 rounded-2xl font-bold font-rpg uppercase tracking-[0.3em] transition-all duration-300 shadow-xl active:scale-95 bg-green-600 hover:bg-green-500">
+        <div class="flex gap-4">
+          <a href="/admin/guias" class="text-center text-[10px] text-stone-500 hover:text-white px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold">Cancelar</a>
+          ${guideId ? `<a href="/admin/guias/${guideId}/preview" target="_blank" class="text-center text-[10px] text-violet-400 hover:text-violet-300 px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold border border-violet-500/30 rounded-2xl">Visualizar</a>` : ""}
+          <button type="submit" class="btn-primary text-[10px] px-6 py-3 rounded-xl font-bold font-rpg uppercase tracking-[0.2em] shadow-xl active:scale-95 text-green-400 hover:text-green-300">
             ${guideId ? "Actualizar" : "Publicar"}
           </button>
         </div>
@@ -335,6 +334,41 @@ function selectEmoji(id, emoji) {
     input.focus();
   }
   hideEmojiDropdown(id);
+}
+function updateImagePreview() {
+  const urlInput = document.getElementById('image-url');
+  const previewImg = document.getElementById('image-preview');
+  const previewGlow = document.getElementById('image-preview-glow');
+  const placeholder = document.getElementById('image-placeholder');
+  if (!urlInput || !previewImg) return;
+  const url = urlInput.value.trim();
+  if (url) {
+    previewImg.src = url;
+    previewImg.classList.remove('hidden');
+    if (previewGlow) previewGlow.classList.remove('hidden');
+    placeholder.classList.add('hidden');
+  } else {
+    previewImg.classList.add('hidden');
+    if (previewGlow) previewGlow.classList.add('hidden');
+    placeholder.classList.remove('hidden');
+  }
+}
+function handleImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const previewImg = document.getElementById('image-preview');
+    const previewGlow = document.getElementById('image-preview-glow');
+    const placeholder = document.getElementById('image-placeholder');
+    if (previewImg) {
+      previewImg.src = e.target.result;
+      previewImg.classList.remove('hidden');
+    }
+    if (previewGlow) previewGlow.classList.remove('hidden');
+    if (placeholder) placeholder.classList.add('hidden');
+  };
+  reader.readAsDataURL(file);
 }
     </script>
   `;
@@ -397,7 +431,7 @@ adminGuias.get("/", async (c) => {
   const list = result.rows as unknown as GuideRow[];
 
   const rows = list.length === 0
-    ? `<tr><td colspan="5" class="py-20 text-center text-stone-700 text-[10px] italic font-rpg uppercase tracking-[0.5em]">Base de datos vacía</td></tr>`
+    ? `<tr><td colspan="4" class="py-20 text-center text-stone-700 text-[10px] italic font-rpg uppercase tracking-[0.5em]">Base de datos vacía</td></tr>`
     : list.map((g) => `
         <tr class="border-b border-white/5 hover:bg-white/5 transition-all duration-300">
           <td class="py-6 px-8">
@@ -415,7 +449,6 @@ adminGuias.get("/", async (c) => {
               ${g.published ? "Publicado" : "Borrador"}
             </span>
           </td>
-          <td class="py-6 px-8 text-stone-600 font-mono text-[10px] tracking-tighter">${g.created_at.slice(0, 10)}</td>
           <td class="py-6 px-8 text-right">
             <div class="flex items-center justify-end gap-2">
               <a href="/admin/guias/${g.id}/editar" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 border border-violet-500/30 hover:border-violet-500/50 rounded-lg transition-all">Editar</a>
@@ -450,7 +483,6 @@ adminGuias.get("/", async (c) => {
               <th class="py-6 px-8 text-left">Título</th>
               <th class="py-6 px-8 text-left">Autor</th>
               <th class="py-6 px-8 text-left">Estado</th>
-              <th class="py-6 px-8 text-left">Fecha</th>
               <th class="py-6 px-8"></th>
             </tr>
           </thead>

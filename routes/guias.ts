@@ -187,10 +187,6 @@ export function renderGuide(title: string, data: GuideData, author: string, date
             <p class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1">Escrito por</p>
             <p class="text-white font-rpg font-bold uppercase tracking-widest">${esc(author)}</p>
           </div>
-          <div class="pt-4 border-t border-white/5">
-            <p class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1">Fecha de Registro</p>
-            <p class="text-stone-400 font-mono text-xs">${esc(date)}</p>
-          </div>
         </div>
 
       </div>
@@ -291,9 +287,8 @@ guias.get("/", async (c) => {
                 ${badgesHtml}
               </div>
               
-              <div class="flex flex-col items-center md:items-end gap-2 text-right">
+<div class="flex flex-col items-center md:items-end gap-2 text-right">
                 <span class="text-[9px] font-rpg font-bold text-stone-600 uppercase tracking-widest">Escrito por ${esc(g.author)}</span>
-                <span class="text-[9px] font-mono text-stone-700 font-bold tracking-tighter">${g.created_at.slice(0, 10)}</span>
               </div>
 
               <div class="hidden md:block">
