@@ -175,8 +175,9 @@ function dropsInputs(drops: DropField[]): string {
 
 // ─── Formulario principal ─────────────────────────────────────────────────────
 
-function guideForm(title: string, data: GuideData | null, guideId: string | null): string {
+function guideForm(title: string, data: GuideData | null, guideId: string | null, userRole: string = "escudero"): string {
   const action = guideId ? `/admin/guias/${guideId}/editar` : "/admin/guias/nueva";
+  const isSuperadmin = userRole === "superadmin";
   const d = data ?? {
     bossEmoji: "📜", imageUrl: "", imageBase64: "", category: "Guía de Boss", subtitle: "",
     badges: [], infoBox: "", stats: [], warningBox: "", steps: [], drops: [], tipBox: "",
@@ -302,14 +303,18 @@ function guideForm(title: string, data: GuideData | null, guideId: string | null
 
       <!-- Acciones -->
       <div class="flex flex-col md:flex-row items-center justify-end bg-[#11131A]/80 border border-white/5 p-10 rounded-[3rem] mt-10">
-        <input type="hidden" name="published" value="1" />
+        <input type="hidden" name="action" value="save" />
         
-        <div class="flex gap-4">
+        <div class="flex gap-4 flex-wrap">
           <a href="/admin/guias" class="text-center text-[10px] text-stone-500 hover:text-white px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold">Cancelar</a>
-          ${guideId ? `<a href="/admin/guias/${guideId}/preview" target="_blank" class="text-center text-[10px] text-violet-400 hover:text-violet-300 px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold border border-violet-500/30 rounded-2xl">Visualizar</a>` : ""}
-          <button type="submit" class="btn-primary text-[10px] px-6 py-3 rounded-xl font-bold font-rpg uppercase tracking-[0.2em] shadow-xl active:scale-95 text-green-400 hover:text-green-300">
-            ${guideId ? "Actualizar" : "Publicar"}
+          ${guideId ? `<a href="/admin/guias/${guideId}/preview" target="_blank" class="text-center text-[10px] text-violet-400 hover:text-violet-300 px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold border border-violet-500/30 rounded-2xl">Visualizar</a>` : `<a href="#" onclick="previewNewGuide()" class="text-center text-[10px] text-violet-400 hover:text-violet-300 px-8 py-4 transition font-rpg uppercase tracking-[0.2em] font-bold border border-violet-500/30 rounded-2xl">Visualizar</a>`}
+          <button type="submit" name="action" value="save" class="text-center text-[10px] text-yellow-400 hover:text-yellow-300 px-6 py-3 rounded-xl font-bold font-rpg uppercase tracking-[0.2em] shadow-xl active:scale-95 border border-yellow-500/30">
+            ${guideId ? "Actualizar" : "Sellar Pergamino"}
           </button>
+          ${isSuperadmin ? `
+          <button type="submit" name="action" value="publish" class="text-center text-[10px] text-green-400 hover:text-green-300 px-6 py-3 rounded-xl font-bold font-rpg uppercase tracking-[0.2em] shadow-xl active:scale-95 border border-green-500/30">
+            ${guideId ? "Publicar Cambios" : "Publicar"}
+          </button>` : ""}
         </div>
       </div>
     </form>
@@ -369,6 +374,24 @@ function handleImageUpload(input) {
     if (placeholder) placeholder.classList.add('hidden');
   };
   reader.readAsDataURL(file);
+}
+function previewNewGuide() {
+  const form = document.querySelector('form');
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => {
+    if (key.startsWith('badge_') || key.startsWith('stat_') || key.startsWith('drop_') || key.startsWith('step_')) {
+      if (!data[key]) data[key] = value;
+    }
+  });
+  const title = document.querySelector('input[name="title"]')?.value || 'Nueva Guía';
+  const category = document.querySelector('input[name="category"]')?.value || 'Guía';
+  const subtitle = document.querySelector('input[name="subtitle"]')?.value || '';
+  const infoBox = document.querySelector('textarea[name="infoBox"]')?.value || '';
+  const tipBox = document.querySelector('textarea[name="tipBox"]')?.value || '';
+  const warningBox = document.querySelector('textarea[name="warningBox"]')?.value || '';
+  const previewUrl = '/admin/guias/preview-temp?title=' + encodeURIComponent(title) + '&category=' + encodeURIComponent(category) + '&subtitle=' + encodeURIComponent(subtitle) + '&infoBox=' + encodeURIComponent(infoBox) + '&tipBox=' + encodeURIComponent(tipBox) + '&warningBox=' + encodeURIComponent(warningBox);
+  window.open(previewUrl, '_blank');
 }
     </script>
   `;
@@ -444,15 +467,15 @@ adminGuias.get("/", async (c) => {
             <span class="text-stone-500 font-rpg text-[9px] uppercase tracking-[0.2em] font-bold">${esc(g.author)}</span>
           </td>
           <td class="py-6 px-8">
-            <span class="inline-flex items-center gap-2 text-[8px] font-bold px-3 py-1 rounded-full border font-rpg uppercase tracking-[0.2em] ${g.published ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-stone-800 text-stone-600 bg-black/20"}">
-              <span class="w-1 h-1 rounded-full ${g.published ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,1)]' : 'bg-stone-700'}"></span>
-              ${g.published ? "Publicado" : "Borrador"}
+            <span class="inline-flex items-center gap-2 text-[8px] font-bold px-3 py-1 rounded-full border font-rpg uppercase tracking-[0.2em] ${g.published ? "border-green-500/30 text-green-400 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 bg-yellow-500/5"}">
+              <span class="w-1 h-1 rounded-full ${g.published ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,1)]' : 'bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,1)]'}"></span>
+              ${g.published ? "Publicado" : "Enviado"}
             </span>
           </td>
           <td class="py-6 px-8 text-right">
             <div class="flex items-center justify-end gap-2">
-              <a href="/admin/guias/${g.id}/editar" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 border border-violet-500/30 hover:border-violet-500/50 rounded-lg transition-all">Editar</a>
-              ${(user.role !== "escudero" || g.author === user.username) ? `
+              ${(user.role !== "escudero" || g.author === user.username) ? `<a href="/admin/guias/${g.id}/editar" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-violet-400 hover:text-violet-300 border border-violet-500/30 hover:border-violet-500/50 rounded-lg transition-all">Editar</a>` : ""}
+              ${user.role === "superadmin" ? `
               ${g.published ? `
               <form method="POST" action="/admin/guias/${g.id}/despublicar" class="inline">
                 <button type="submit" class="px-3 py-1.5 text-[9px] font-rpg font-bold uppercase tracking-[0.2em] text-orange-500 hover:text-orange-400 border border-orange-500/30 hover:border-orange-500/50 rounded-lg transition-all">Despublicar</button>
@@ -495,7 +518,10 @@ adminGuias.get("/", async (c) => {
   return c.html(adminLayout("Guías", content, user, "/admin/guias"));
 });
 
-adminGuias.get("/nueva", (c) => c.html(adminLayout("Nuevo Pergamino", guideForm("", null, null), c.get("user"), "/admin/guias")));
+adminGuias.get("/nueva", (c) => {
+  const user = c.get("user");
+  return c.html(adminLayout("Nuevo Pergamino", guideForm("", null, null, user.role), user, "/admin/guias"));
+});
 
 adminGuias.get("/:id/editar", async (c) => {
   const user = c.get("user");
@@ -509,7 +535,7 @@ adminGuias.get("/:id/editar", async (c) => {
     return c.redirect("/admin/guias");
   }
   
-  return c.html(adminLayout("Editar Pergamino", guideForm(g.title, JSON.parse(g.content), g.id), user, "/admin/guias"));
+  return c.html(adminLayout("Editar Pergamino", guideForm(g.title, JSON.parse(g.content), g.id, user.role), user, "/admin/guias"));
 });
 
 adminGuias.get("/:id/preview", async (c) => {
@@ -522,16 +548,39 @@ adminGuias.get("/:id/preview", async (c) => {
   return c.html(publicLayout(g.title, `<div class="max-w-4xl mx-auto">${rendered}</div>`, c.get("user")));
 });
 
+adminGuias.get("/preview-temp", (c) => {
+  const params = c.req.query();
+  const title = params.title || "Nueva Guía";
+  const content: GuideData = {
+    bossEmoji: "📜",
+    imageUrl: "",
+    imageBase64: "",
+    category: params.category || "Guía",
+    subtitle: params.subtitle || "",
+    badges: [],
+    infoBox: params.infoBox || "",
+    stats: [],
+    warningBox: params.warningBox || "",
+    steps: [],
+    drops: [],
+    tipBox: params.tipBox || "",
+  };
+  const rendered = renderGuide(title, content, c.get("user")?.username || "Usuario", new Date().toISOString().slice(0, 10));
+  return c.html(publicLayout(title, `<div class="max-w-4xl mx-auto">${rendered}</div>`, c.get("user")));
+});
+
 adminGuias.post("/nueva", async (c) => {
   const body = await c.req.parseBody();
   const title = String(body.title ?? "").trim();
+  const action = String(body.action ?? "save");
   const imageBase64 = await extractImageBase64(body as Record<string, string | File>);
   const data = parseGuideData(body as Record<string, string>, imageBase64);
   const db = getTursoClient();
   const now = new Date().toISOString();
+  const published = action === "publish" ? 1 : 0;
   await db.execute({
     sql: `INSERT INTO guides (id, slug, title, content, published, author, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [crypto.randomUUID(), toSlug(title), title, JSON.stringify(data), 1, c.get("user").username, now, now],
+    args: [crypto.randomUUID(), toSlug(title), title, JSON.stringify(data), published, c.get("user").username, now, now],
   });
   return c.redirect("/admin/guias?ok=1");
 });
@@ -540,9 +589,10 @@ adminGuias.post("/:id/editar", async (c) => {
   const user = c.get("user");
   const id = c.req.param("id");
   const body = await c.req.parseBody();
+  const action = String(body.action ?? "save");
   
   const db = getTursoClient();
-  const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
+  const check = await db.execute({ sql: `SELECT author, published FROM guides WHERE id = ?`, args: [id] });
   if (check.rows.length === 0) return c.notFound();
   if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
     return c.redirect("/admin/guias");
@@ -555,22 +605,22 @@ adminGuias.post("/:id/editar", async (c) => {
     imageBase64 = JSON.parse((prev.rows[0] as any).content).imageBase64 || "";
   }
   const data = parseGuideData(body as Record<string, string>, imageBase64);
+  const currentPublished = (check.rows[0] as any).published;
+  const newPublished = action === "publish" && user.role === "superadmin" ? 1 : currentPublished;
   await getTursoClient().execute({
     sql: `UPDATE guides SET title = ?, slug = ?, content = ?, published = ?, updated_at = ? WHERE id = ?`,
-    args: [title, toSlug(title), JSON.stringify(data), 1, new Date().toISOString(), id],
+    args: [title, toSlug(title), JSON.stringify(data), newPublished, new Date().toISOString(), id],
   });
   return c.redirect("/admin/guias?ok=1");
 });
 
 adminGuias.post("/:id/publicar", async (c) => {
   const user = c.get("user");
+  if (user.role !== "superadmin") return c.redirect("/admin/guias");
   const id = c.req.param("id");
   const db = getTursoClient();
   const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
   if (check.rows.length === 0) return c.notFound();
-  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
-    return c.redirect("/admin/guias");
-  }
   await db.execute({
     sql: `UPDATE guides SET published = 1, updated_at = ? WHERE id = ?`,
     args: [new Date().toISOString(), id],
@@ -580,13 +630,11 @@ adminGuias.post("/:id/publicar", async (c) => {
 
 adminGuias.post("/:id/despublicar", async (c) => {
   const user = c.get("user");
+  if (user.role !== "superadmin") return c.redirect("/admin/guias");
   const id = c.req.param("id");
   const db = getTursoClient();
   const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
   if (check.rows.length === 0) return c.notFound();
-  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
-    return c.redirect("/admin/guias");
-  }
   await db.execute({
     sql: `UPDATE guides SET published = 0, updated_at = ? WHERE id = ?`,
     args: [new Date().toISOString(), id],
@@ -596,13 +644,11 @@ adminGuias.post("/:id/despublicar", async (c) => {
 
 adminGuias.post("/:id/borrar", async (c) => {
   const user = c.get("user");
+  if (user.role !== "superadmin") return c.redirect("/admin/guias");
   const id = c.req.param("id");
   const db = getTursoClient();
   const check = await db.execute({ sql: `SELECT author FROM guides WHERE id = ?`, args: [id] });
   if (check.rows.length === 0) return c.notFound();
-  if (user.role === "escudero" && (check.rows[0] as any).author !== user.username) {
-    return c.redirect("/admin/guias");
-  }
   await db.execute({ sql: `DELETE FROM guides WHERE id = ?`, args: [id] });
   return c.redirect("/admin/guias?ok=1");
 });

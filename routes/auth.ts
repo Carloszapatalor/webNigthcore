@@ -64,7 +64,7 @@ auth.post("/login", async (c) => {
 
   const db = getTursoClient();
   const result = await db.execute({
-    sql: `SELECT id, username, password_hash, role, must_change_password FROM admin_users WHERE username = ?`,
+    sql: `SELECT id, username, password_hash, role, must_change_password FROM admin_users WHERE LOWER(username) = LOWER(?)`,
     args: [username],
   });
 
