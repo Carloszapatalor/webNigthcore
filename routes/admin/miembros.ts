@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
-import { cacheGetStale, cacheSet } from "../../lib/cache.ts";
+import { cacheGetStale, cacheSet, cacheDelete } from "../../lib/cache.ts";
 
 const IDLE_BASE = "https://query.idleclans.com";
 
@@ -28,38 +28,37 @@ miembros.get("/", async (c) => {
 
   const cacheKey = "miembros:data";
   const cacheTtl = 3 * 60 * 1000;
+  const forceFresh = c.req.query("fresh") === "1";
+  if (forceFresh) cacheDelete(cacheKey);
   const cached = cacheGetStale<{ rpg: RpgRow[]; members: DbMember[]; alters: { username: string; alter_name: string }[]; lastSync: string }>(cacheKey);
   
   let rpgResult, membersDbResult, altersResult;
 
-  if (!cached) {
-    [rpgResult, membersDbResult, altersResult] = await Promise.allSettled([
-      db.execute({
-        sql: `SELECT d.username, SUM(d.total_exp) as week_exp,
-                     COALESCE(p.level, 1) as level,
-                     COALESCE(p.title, '🌱 Buscador') as title
-              FROM rpg_daily_exp d
-              LEFT JOIN rpg_players p ON p.username = d.username
-              WHERE d.date >= ?
-              GROUP BY d.username`,
-        args: [weekStart],
-      }),
-      db.execute(`SELECT member_name, rank, updated_at, hours_offline FROM clan_members ORDER BY rank DESC, member_name ASC`),
-      db.execute(`SELECT username, alter_name FROM member_alters`),
-    ]);
+  [rpgResult, membersDbResult, altersResult] = await Promise.allSettled([
+    db.execute({
+      sql: `SELECT d.username, SUM(d.total_exp) as week_exp,
+                   COALESCE(p.level, 1) as level,
+                   COALESCE(p.title, '🌱 Buscador') as title
+            FROM rpg_daily_exp d
+            LEFT JOIN rpg_players p ON p.username = d.username
+            WHERE d.date >= ?
+            GROUP BY d.username`,
+      args: [weekStart],
+    }),
+    db.execute(`SELECT member_name, rank, updated_at, hours_offline FROM clan_members ORDER BY rank DESC, member_name ASC`),
+    db.execute(`SELECT username, alter_name FROM member_alters`),
+  ]);
 
-    if (rpgResult.status === "fulfilled" && membersDbResult.status === "fulfilled" && altersResult.status === "fulfilled") {
-      const rpgRows = rpgResult.value.rows as unknown as RpgRow[];
-      const memberRows = membersDbResult.value.rows as unknown as DbMember[];
-      const alterRows = altersResult.value.rows as unknown as { username: string; alter_name: string }[];
-      const lastSync = memberRows.length > 0 ? memberRows[0].updated_at.slice(0, 10) : "";
-      
+  if (rpgResult.status === "fulfilled" && membersDbResult.status === "fulfilled" && altersResult.status === "fulfilled") {
+    const rpgRows = rpgResult.value.rows as unknown as RpgRow[];
+    const memberRows = membersDbResult.value.rows as unknown as DbMember[];
+    const alterRows = altersResult.value.rows as unknown as { username: string; alter_name: string }[];
+    const lastSync = memberRows.length > 0 ? memberRows[0].updated_at.slice(0, 10) : "";
+    
+    // Only cache if not forcing fresh
+    if (!forceFresh) {
       cacheSet(cacheKey, { rpg: rpgRows, members: memberRows, alters: alterRows, lastSync }, cacheTtl);
     }
-  } else {
-    rpgResult = { status: "fulfilled" as const, value: { rows: cached.rpg } };
-    membersDbResult = { status: "fulfilled" as const, value: { rows: cached.members } };
-    altersResult = { status: "fulfilled" as const, value: { rows: cached.alters } };
   }
 
   type RpgRow = { username: string; week_exp: number; level: number; title: string };
@@ -86,10 +85,16 @@ miembros.get("/", async (c) => {
     }
   }
 
-  const alterNames = new Set([...alterMap.values()].map((v) => v.toLowerCase()));
-  const memberList = allMembers.filter((m) => !alterNames.has(m.member_name.toLowerCase()));
-
-  const datalistOptions = allMembers.map((m) => `<option value="${esc(m.member_name)}">`).join("");
+  // Filtrar: excluir cuentas secundarias (values/alters)
+  const secondaryAlters = new Set([...alterMap.values()].map(v => v.toLowerCase()));
+  const memberList = allMembers.filter(m => 
+    !secondaryAlters.has(m.member_name.toLowerCase())
+  );
+  // Datalist: solo miembros principales sin alter
+  const datalistOptions = allMembers
+    .filter(m => !alterMap.has(m.member_name.toLowerCase()))
+    .map((m) => `<option value="${esc(m.member_name)}">`)
+    .join("");
 
   const rows =
     memberList.length === 0
@@ -136,7 +141,7 @@ miembros.get("/", async (c) => {
               class="w-32 bg-[#0B0D13] border border-white/5 rounded-xl px-3 py-1.5 text-[10px] text-white focus:border-violet-500 focus:outline-none transition-all placeholder:text-stone-800 font-subtitle uppercase tracking-widest" />
             ${currentAlter
               ? `<button type="button"
-                   onclick="fetch('/admin/miembros/alter/quitar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username=${encodeURIComponent(m.member_name)}'}).then(()=>location.reload())"
+                   onclick="fetch('/admin/miembros/alter/quitar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'username='+encodeURIComponent('${esc(m.member_name)}')}).then(()=>location.reload())"
                    class="absolute right-2 top-1/2 -translate-y-1/2 text-stone-700 hover:text-red-500 transition-colors text-xs font-bold">✕</button>`
               : ""}
           </div>
@@ -224,17 +229,25 @@ miembros.post("/alter", async (c) => {
       args: [username, alter],
     });
   }
-  return c.redirect("/admin/miembros?ok=1");
+  
+  // Invalidar cache completamente
+  cacheDelete("miembros:data");
+  
+  // Forzar datos frescos usando parámetro
+  return c.redirect("/admin/miembros?ok=1&fresh=1");
 });
 
 miembros.post("/alter/quitar", async (c) => {
   const body = await c.req.parseBody();
-  const username = String(body.username ?? "").trim();
+  const username = String(body.username ?? "");
   if (username) {
     const db = getTursoClient();
     await db.execute({ sql: `DELETE FROM member_alters WHERE username = ?`, args: [username] });
+    
+    // Invalidar cache completamente
+    cacheDelete("miembros:data");
   }
-  return new Response("", { status: 204 });
+  return c.redirect("/admin/miembros?ok=1&fresh=1");
 });
 
 export default miembros;
