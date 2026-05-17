@@ -2,6 +2,7 @@
   "tasks": {
     "dev": "deno run --watch --allow-net --allow-env --env-file=.env main.ts"
   },
+  "nodeModulesDir": "auto",
   "imports": {
     "hono": "jsr:@hono/hono@^4",
     "hono/jwt": "jsr:@hono/hono@^4/jwt",

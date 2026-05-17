@@ -32,7 +32,7 @@ let cachedClanStats: Record<string, number> = {};
 let lastCacheUpdate = 0;
 let cacheUpdateInProgress = false;
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutos
-const API_TIMEOUT = 4000; // 4 segundos máximo por llamada a API externa
+const API_TIMEOUT = 2000; // 2 segundos máximo por llamada (reducido de 4s)
 
 async function updateHomeCache() {
   if (cacheUpdateInProgress) return; // Evita llamadas concurrentes duplicadas
@@ -418,12 +418,19 @@ home.get("/", async (c) => {
   const weekStart = getWeekStart();
   const today = getTodayUTC();
 
+  // Usar SIEMPRE datos cacheados - NO esperar APIs externas (stale-while-revalidate)
   const staleQuests = cacheGetStale<[string, { combat: number; skilling: number; total: number }][]>("home:quests");
   const staleClanStats = cacheGetStale<Record<string, number>>("home:clanStats");
 
-  if (Date.now() - lastCacheUpdate > CACHE_TTL) {
-    updateHomeCache().catch(e => console.error("Home cache update error:", e));
+  // Actualizar cache en BACKGROUND (NO bloqueante)
+  if (Date.now() - lastCacheUpdate > CACHE_TTL && !cacheUpdateInProgress) {
+    // Fire & forget - no await
+    updateHomeCache().catch(() => {});
   }
+
+  // Usar datos cacheados (pueden ser stale pero la página carga rápido)
+  const quests = staleQuests || cachedQuestsRanking;
+  const clanStats = staleClanStats || cachedClanStats;
 
   const [rankingResult, eventResult, membersResult, onlineResult, guidesResult] = await Promise.allSettled([
     db.execute({
@@ -457,9 +464,6 @@ home.get("/", async (c) => {
 
   type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
   const guides = guidesResult.status === "fulfilled" ? (guidesResult.value.rows as unknown as GuideRow[]) : [];
-
-  const quests = staleQuests || cachedQuestsRanking;
-  const clanStats = staleClanStats || cachedClanStats;
 
   const homeData = {
     ranking,

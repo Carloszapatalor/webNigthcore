@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
+import { cacheGetStale, cacheSet, cacheDelete } from "../../lib/cache.ts";
 
 const reportes = new Hono();
 
@@ -8,14 +9,24 @@ reportes.get("/", async (c) => {
   const user = c.get("user");
   if (user.role !== "superadmin" && user.role !== "diputado") return c.redirect("/admin");
 
-  const db = getTursoClient();
-  const [reportsResult, membersResult] = await Promise.all([
-    db.execute(`SELECT id, username, reason, created_at FROM member_reports ORDER BY created_at DESC`),
-    db.execute(`SELECT member_name FROM clan_members ORDER BY member_name ASC`),
-  ]);
-
-  const list = reportsResult.rows as any[];
-  const members = membersResult.rows as any[];
+  const cached = cacheGetStale<{ list: any[]; members: any[] }>("admin:reportes");
+  
+  let list: any[] = [];
+  let members: any[] = [];
+  
+  if (cached) {
+    list = cached.list;
+    members = cached.members;
+  } else {
+    const db = getTursoClient();
+    const [reportsResult, membersResult] = await Promise.all([
+      db.execute(`SELECT id, username, reason, created_at FROM member_reports ORDER BY created_at DESC`),
+      db.execute(`SELECT member_name FROM clan_members ORDER BY member_name ASC`),
+    ]);
+    list = reportsResult.rows as any[];
+    members = membersResult.rows as any[];
+    cacheSet("admin:reportes", { list, members }, 2 * 60 * 1000);
+  }
 
   const rows = list.length === 0 
     ? `<tr><td colspan="4" class="py-20 text-center text-stone-700 text-[10px] italic font-rpg uppercase tracking-[0.5em]">No hay expedientes registrados</td></tr>`
@@ -106,6 +117,7 @@ reportes.post("/crear", async (c) => {
     });
   }
   
+  cacheDelete("admin:reportes");
   return c.redirect("/admin/reportes?ok=1");
 });
 
@@ -119,6 +131,7 @@ reportes.post("/:id/borrar", async (c) => {
     args: [id],
   });
   
+  cacheDelete("admin:reportes");
   return c.redirect("/admin/reportes?ok=1");
 });
 

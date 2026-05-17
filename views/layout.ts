@@ -28,59 +28,10 @@ export function publicLayout(title: string, content: string, user?: User | null)
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(title)} — Nightcore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style type="text/tailwindcss">
-    @layer base {
-      ::-webkit-scrollbar { @apply w-1.5; }
-      ::-webkit-scrollbar-track { @apply bg-[#0B0D13]; }
-      ::-webkit-scrollbar-thumb { @apply bg-stone-800 rounded-full hover:bg-violet-600 transition; }
-      
-      body { 
-        @apply bg-[#0B0D13] text-stone-300 min-h-screen selection:bg-violet-500/40 overflow-x-hidden;
-        font-family: 'Inter', sans-serif;
-      }
-      
-      h1, h2, h3, .font-rpg { font-family: 'Orbitron', sans-serif; }
-      .font-subtitle { font-family: 'Exo 2', sans-serif; }
-    }
-
-    .neon-border { @apply border border-white/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]; }
-    .neon-text-violet { @apply text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]; }
-    .neon-text-pink { @apply text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]; }
-    .neon-text-cyan { @apply text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]; }
-    .neon-text-green { @apply text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]; }
-    .neon-text-orange { @apply text-orange-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]; }
-    
-    .neon-glow-violet { @apply shadow-[0_0_30px_rgba(139,92,246,0.15)] border border-violet-500/20; }
-    .neon-glow-pink { @apply shadow-[0_0_30px_rgba(236,72,153,0.15)] border border-pink-500/20; }
-    .neon-glow-cyan { @apply shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/20; }
-    .neon-glow-green { @apply shadow-[0_0_30px_rgba(34,197,94,0.15)] border border-green-500/20; }
-    
-    .glass-panel { @apply bg-[#11131A]/60 backdrop-blur-2xl border border-white/5 shadow-2xl rounded-[2.5rem]; }
-    
-    .btn-primary { @apply bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all active:scale-95; }
-    .btn-secondary { @apply bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-95; }
-
-    .prose h1 { @apply text-3xl font-bold text-white mt-8 mb-6 font-rpg tracking-widest uppercase; }
-    .prose h2 { @apply text-2xl font-bold text-stone-100 mt-6 mb-4 font-rpg tracking-widest uppercase border-l-4 border-violet-600 pl-4; }
-    .prose h3 { @apply text-xl font-semibold text-violet-400 mt-5 mb-3 font-subtitle tracking-wider uppercase; }
-    .prose p  { @apply text-stone-400 mb-5 leading-relaxed text-base; }
-    .prose ul { @apply list-disc list-inside text-stone-400 mb-4 space-y-2; }
-    .prose ol { @apply list-decimal list-inside text-stone-400 mb-4 space-y-2; }
-    .prose code { @apply bg-stone-900 text-violet-400 px-2 py-1 rounded border border-violet-900/30 text-sm font-mono; }
-    .prose pre  { @apply bg-[#0B0D13] border border-white/5 rounded-2xl p-5 mb-5 overflow-x-auto shadow-inner; }
-    .prose a { @apply text-violet-400 hover:text-violet-300 transition-colors underline decoration-violet-900/50 underline-offset-4; }
-    .prose blockquote { @apply border-l-4 border-violet-600 bg-violet-600/5 pl-5 py-3 pr-5 text-stone-500 italic my-4 rounded-r-2xl; }
-
-    /* Mobile menu animation */
-    #mobile-menu { max-height: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease; opacity: 0; }
-    #mobile-menu.open { max-height: 400px; opacity: 1; }
-    .hamburger-line { @apply block w-6 h-0.5 bg-stone-400 rounded-full transition-all duration-300; }
-    #menu-btn.open .hamburger-line:nth-child(1) { transform: translateY(6px) rotate(45deg); @apply bg-violet-400; }
-    #menu-btn.open .hamburger-line:nth-child(2) { opacity: 0; }
-    #menu-btn.open .hamburger-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); @apply bg-violet-400; }
-  </style>
+  <link rel="stylesheet" href="/css/tailwind.css">
 </head>
 <body class="bg-[#0B0D13] overflow-x-hidden">
   <!-- Background Elements -->
@@ -213,53 +164,10 @@ export function adminLayout(title: string, content: string, user: User, currentP
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(title)} — Admin Nightcore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style type="text/tailwindcss">
-    @layer base {
-      ::-webkit-scrollbar { @apply w-1.5; }
-      ::-webkit-scrollbar-track { @apply bg-[#0B0D13]; }
-      ::-webkit-scrollbar-thumb { @apply bg-stone-800 rounded-full hover:bg-violet-600 transition; }
-      
-      body { 
-        @apply bg-[#0B0D13] text-stone-300 min-h-screen selection:bg-violet-500/40;
-        font-family: 'Inter', sans-serif;
-      }
-      
-      h1, h2, h3, .font-rpg { font-family: 'Orbitron', sans-serif; }
-      .font-subtitle { font-family: 'Exo 2', sans-serif; }
-    }
-    
-    .neon-border { @apply border border-white/10 shadow-[0_0_20px_rgba(139,92,246,0.1)]; }
-    .neon-text-violet { @apply text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]; }
-    .neon-text-pink { @apply text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]; }
-    .neon-text-cyan { @apply text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]; }
-    .neon-text-green { @apply text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]; }
-    .neon-text-orange { @apply text-orange-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]; }
-    
-    .neon-glow-violet { @apply shadow-[0_0_30px_rgba(139,92,246,0.15)] border border-violet-500/20; }
-    .neon-glow-pink { @apply shadow-[0_0_30px_rgba(236,72,153,0.15)] border border-pink-500/20; }
-    .neon-glow-cyan { @apply shadow-[0_0_30px_rgba(6,182,212,0.15)] border border-cyan-500/20; }
-    .neon-glow-green { @apply shadow-[0_0_30px_rgba(34,197,94,0.15)] border border-green-500/20; }
-    
-    .glass-panel { @apply bg-[#11131A]/60 backdrop-blur-2xl border border-white/5 shadow-2xl rounded-[2.5rem]; }
-    .glass-sidebar { @apply bg-[#0D0F16] border-r border-white/5 backdrop-blur-2xl; }
-    
-    .btn-primary { @apply bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all active:scale-95; }
-    .btn-secondary { @apply bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-95; }
-
-    /* Sidebar mobile transitions */
-    #admin-sidebar {
-      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-    }
-    #sidebar-overlay {
-      transition: opacity 0.3s ease;
-    }
-    .hamburger-line { @apply block w-5 h-0.5 bg-stone-400 rounded-full transition-all duration-300; }
-    #admin-menu-btn.open .hamburger-line:nth-child(1) { transform: translateY(6px) rotate(45deg); @apply bg-violet-400; }
-    #admin-menu-btn.open .hamburger-line:nth-child(2) { opacity: 0; }
-    #admin-menu-btn.open .hamburger-line:nth-child(3) { transform: translateY(-6px) rotate(-45deg); @apply bg-violet-400; }
-  </style>
+  <link rel="stylesheet" href="/css/tailwind.css">
 </head>
 <body class="bg-[#0B0D13] overflow-x-hidden">
   <!-- Background Elements -->

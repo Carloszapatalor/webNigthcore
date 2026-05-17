@@ -1,17 +1,28 @@
 import { Hono } from "hono";
 import { getTursoClient } from "../../lib/turso.ts";
 import { adminLayout, esc } from "../../views/layout.ts";
+import { cacheGetStale, cacheSet, cacheDelete } from "../../lib/cache.ts";
 
 const whitelist = new Hono();
 
 whitelist.get("/", async (c) => {
+  const cached = cacheGetStale<{ list: { username: string; reason: string | null; added_at: string }[] }>("admin:whitelist");
+  
+  let list: { username: string; reason: string | null; added_at: string }[] = [];
+  
+  if (cached) {
+    list = cached.list;
+  } else {
+    const db = getTursoClient();
+    const result = await db.execute(
+      `SELECT username, reason, added_at FROM inactivity_whitelist ORDER BY added_at DESC`
+    );
+    list = result.rows as unknown as { username: string; reason: string | null; added_at: string }[];
+    cacheSet("admin:whitelist", { list }, 5 * 60 * 1000);
+  }
+
   const user = c.get("user");
-  const db = getTursoClient();
-  const result = await db.execute(
-    `SELECT username, reason, added_at FROM inactivity_whitelist ORDER BY added_at DESC`
-  );
   type WlRow = { username: string; reason: string | null; added_at: string };
-  const list = result.rows as unknown as WlRow[];
 
   const isEscudero = user.role === "escudero";
 
@@ -108,6 +119,7 @@ whitelist.post("/anadir", async (c) => {
     args: [username, reason, addedAt],
   });
 
+  cacheDelete("admin:whitelist");
   return c.redirect("/admin/whitelist?ok=1");
 });
 
@@ -126,6 +138,7 @@ whitelist.post("/quitar", async (c) => {
     args: [username],
   });
 
+  cacheDelete("admin:whitelist");
   return c.redirect("/admin/whitelist?ok=1");
 });
 

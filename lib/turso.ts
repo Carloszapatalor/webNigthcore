@@ -86,7 +86,11 @@ await db.execute(`
   // ── Índices de rendimiento ────────────────────────────────────────
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_rpg_daily_date     ON rpg_daily_exp (date)`).catch(() => {});
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_rpg_daily_username ON rpg_daily_exp (username)`).catch(() => {});
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_rpg_daily_exp_composite ON rpg_daily_exp (date, username, total_exp)`).catch(() => {});
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_guides_published   ON guides (published, created_at DESC)`).catch(() => {});
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_guides_author     ON guides (author)`).catch(() => {});
   await db.execute(`CREATE INDEX IF NOT EXISTS idx_reports_created    ON member_reports (created_at DESC)`).catch(() => {});
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_clan_members_rank  ON clan_members (rank DESC, member_name ASC)`).catch(() => {});
+  await db.execute(`CREATE INDEX IF NOT EXISTS idx_clan_members_hours  ON clan_members (hours_offline)`).catch(() => {});
 }
 
