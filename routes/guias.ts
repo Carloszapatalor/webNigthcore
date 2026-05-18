@@ -55,33 +55,45 @@ export function renderGuide(title: string, data: GuideData, author: string, date
          <span class="relative z-10">${esc(data.bossEmoji || "📜")}</span>
        </div>`;
 
-  const badges = (data.badges ?? []).map(b => `
-    <span class="px-4 py-1.5 rounded-full border text-[10px] font-rpg font-bold tracking-widest uppercase ${badgeColorMap[b.color] || badgeColorMap.yellow}">
+  const badges = (data.badges ?? []).map(b => {
+    const labelLen = (b.label || '').length;
+    const sizeClass = labelLen > 25 ? 'text-[8px]' : labelLen > 18 ? 'text-[9px]' : 'text-[10px]';
+    return `
+    <span class="px-3 py-1.5 rounded-full border ${sizeClass} font-rpg font-bold tracking-widest uppercase ${badgeColorMap[b.color] || badgeColorMap.yellow} break-all max-w-[150px]">
       ${esc(b.label)}
-    </span>`).join("");
+    </span>`;
+  }).join("");
 
   const statsGrid = (data.stats ?? []).length > 0 ? `
     <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
       ${data.stats.map(s => {
         const icon = s.emoji || statIconMap[s.label.toUpperCase()] || "📊";
+        const labelLen = (s.label || '').length;
+        const valueLen = (s.value || '').length;
+        const labelSize = labelLen > 20 ? 'text-[8px]' : labelLen > 15 ? 'text-[9px]' : 'text-[9px]';
+        const valueSize = valueLen > 20 ? 'text-lg' : valueLen > 15 ? 'text-xl' : 'text-xl';
         return `
-        <div class="bg-black/40 border border-white/5 rounded-[2rem] p-6 text-center hover:border-violet-500/30 transition-all duration-300 group hover:bg-white/5 shadow-inner">
+        <div class="bg-black/40 border border-white/5 rounded-[2rem] p-6 text-center hover:border-violet-500/30 transition-all duration-300 group hover:bg-white/5 shadow-inner min-w-0">
           <div class="text-2xl mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${icon}</div>
-          <div class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1">${esc(s.label)}</div>
-          <div class="text-xl font-rpg font-bold text-white tracking-widest uppercase">${esc(s.value)}</div>
+          <div class="${labelSize} text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1 break-all">${esc(s.label)}</div>
+          <div class="${valueSize} font-rpg font-bold text-white tracking-widest uppercase break-all">${esc(s.value)}</div>
         </div>`;
       }).join("")}
     </div>` : "";
 
-  const steps = (data.steps ?? []).map((s, i) => `
+  const steps = (data.steps ?? []).map((s, i) => {
+    const textLen = (s.text || '').length;
+    const sizeClass = textLen > 120 ? 'text-sm' : 'text-base';
+    return `
     <div class="flex gap-6 items-start group">
       <div class="w-10 h-10 rounded-xl bg-violet-600/10 border border-violet-500/30 flex items-center justify-center flex-shrink-0 text-violet-400 font-rpg font-bold text-sm shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover:bg-violet-600 group-hover:text-white transition-all">
         ${i + 1}
       </div>
-      <div class="flex-1 pt-2">
-        <p class="text-stone-300 leading-relaxed font-subtitle text-base">${esc(s.text)}</p>
+      <div class="flex-1 pt-2 min-w-0">
+        <p class="text-stone-300 leading-relaxed font-subtitle ${sizeClass} break-all">${esc(s.text)}</p>
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 
   const dropsGrid = (data.drops ?? []).map(d => `
     <div class="bg-black/20 border ${d.rare ? 'border-orange-500/30 bg-orange-500/5' : 'border-white/5'} rounded-2xl p-5 flex items-center gap-5 hover:scale-105 transition-transform">

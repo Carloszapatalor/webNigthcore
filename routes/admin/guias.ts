@@ -79,9 +79,9 @@ function badgesInputs(badges: { label: string; color: string }[]): string {
     const b = badges[i] ?? { label: "", color: "yellow" };
     return `
       <div class="flex gap-3 items-center bg-black/40 p-4 rounded-2xl border border-white/5 group hover:border-white/10 transition-all">
-        <div class="flex-1">
+        <div class="flex-1 min-w-0">
           <input name="badge_label_${i}" value="${esc(b.label)}" placeholder="${i === 3 ? "🔑 Llave requerida..." : "💛 HP: 425"}"
-            class="w-full bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider" />
+            class="w-full bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider break-all" oninput="adjustFontSize(this)" />
         </div>
         <select name="badge_color_${i}" class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-violet-400 font-bold focus:border-violet-500 focus:outline-none font-rpg uppercase cursor-pointer">
           ${colorOptions.map(c => `<option value="${c.v}" ${b.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
@@ -106,7 +106,7 @@ function statsInputs(stats: StatField[]): string {
     const s = stats[i] ?? { label: "", value: "", color: "default", emoji: "" };
     const id = `stat-emoji-${i}-${Math.random().toString(36).slice(2, 8)}`;
     return `
-      <div class="grid grid-cols-4 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5">
         <div class="relative">
           <input type="text" name="stat_emoji_${i}" value="${esc(s.emoji ?? '')}" 
             placeholder="📊" maxlength="2" id="${id}"
@@ -116,9 +116,9 @@ function statsInputs(stats: StatField[]): string {
             onblur="setTimeout(() => hideEmojiDropdown('${id}'), 200)" />
         </div>
         <input name="stat_label_${i}" value="${esc(s.label)}" placeholder="Ataque"
-          class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider" />
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg uppercase tracking-wider break-all min-w-0" oninput="adjustFontSize(this)" />
         <input name="stat_value_${i}" value="${esc(s.value)}" placeholder="99"
-          class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-wider" />
+          class="bg-[#0B0D13] border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-rpg tracking-wider break-all min-w-0" oninput="adjustFontSize(this)" />
         <select name="stat_color_${i}" class="bg-[#0B0D13] border border-white/10 rounded-xl px-2 py-2.5 text-xs text-violet-400 font-bold focus:border-violet-500 focus:outline-none font-rpg uppercase cursor-pointer">
           ${colorOptions.map(c => `<option value="${c.v}" ${s.color === c.v ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
@@ -136,7 +136,7 @@ function stepsInputs(steps: StepField[]): string {
       <div class="flex gap-4 items-center bg-black/40 p-4 rounded-2xl border border-white/5">
         <span class="w-8 h-8 rounded-lg bg-violet-600 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 font-rpg shadow-[0_0_10px_rgba(139,92,246,0.4)]">${i + 1}</span>
         <input name="step_${i}" value="${esc(s.text)}" placeholder="Procedimiento de combate..."
-          class="flex-1 bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-subtitle tracking-wider" />
+          class="flex-1 min-w-0 bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 focus:outline-none font-subtitle tracking-wider break-all" oninput="adjustFontSize(this)" />
       </div>`;
   }).join("");
 }
@@ -158,7 +158,7 @@ function dropsInputs(drops: DropField[]): string {
             ${iconSelector(`drop_icon_${i}`, d.icon || "📦")}
           </div>
           <input name="drop_name_${i}" value="${esc(d.name)}" placeholder="Nombre del Botín"
-            class="flex-1 bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 focus:outline-none font-subtitle uppercase tracking-wider transition-all" />
+            class="flex-1 min-w-0 bg-[#0B0D13] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 focus:outline-none font-subtitle uppercase tracking-wider transition-all break-all" oninput="adjustFontSize(this)" />
           
           <input name="drop_rate_${i}" value="${esc(d.rate)}" placeholder="1.0%"
             class="w-20 bg-[#0B0D13] border border-white/10 rounded-xl px-2 py-3 text-white text-xs text-center focus:border-violet-500 focus:outline-none font-mono transition-all" />
@@ -339,6 +339,18 @@ function selectEmoji(id, emoji) {
     input.focus();
   }
   hideEmojiDropdown(id);
+}
+function adjustFontSize(input) {
+  const len = input.value.length;
+  if (len > 25) {
+    input.style.fontSize = '0.65rem';
+  } else if (len > 20) {
+    input.style.fontSize = '0.75rem';
+  } else if (len > 15) {
+    input.style.fontSize = '0.85rem';
+  } else {
+    input.style.fontSize = '';
+  }
 }
 function updateImagePreview() {
   const urlInput = document.getElementById('image-url');
