@@ -40,7 +40,8 @@ export async function syncClanMembers() {
     const db = getTursoClient();
     const now = new Date().toISOString();
 
-    await db.execute(`DELETE FROM clan_members`);
+    // NO borrar datos antes - mantener datos anteriores si la sync falla
+    // Usar INSERT OR REPLACE para actualizar solo los miembros que vienen de la API
 
     const memberlist = (data as { memberlist: RecruitmentMember[] }).memberlist;
 

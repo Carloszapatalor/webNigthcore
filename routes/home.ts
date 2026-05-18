@@ -459,7 +459,16 @@ home.get("/", async (c) => {
 
   const rawEventLabel = eventResult.status === "fulfilled" && eventResult.value.rows.length > 0 ? (eventResult.value.rows[0] as unknown as { label: string }).label : null;
   const eventLabel = rawEventLabel ? rawEventLabel.split(/[—–-]/)[0].trim() : null;
-  const memberCount = membersResult.status === "fulfilled" ? (membersResult.value.rows[0] as unknown as { cnt: number }).cnt : "—";
+  
+  // Fallback: si la query falla o retorna 0, usar los datos de la tabla local (que persiste entre syncs)
+  let memberCount = "—";
+  if (membersResult.status === "fulfilled" && membersResult.value.rows.length > 0) {
+    const cnt = (membersResult.value.rows[0] as unknown as { cnt: number }).cnt;
+    if (cnt > 0) {
+      memberCount = cnt;
+    }
+  }
+  
   const onlineList = onlineResult.status === "fulfilled" ? (onlineResult.value.rows as unknown as { member_name: string }[]) : [];
 
   type GuideRow = { slug: string; title: string; author: string; created_at: string; content: string };
