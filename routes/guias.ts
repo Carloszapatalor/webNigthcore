@@ -57,9 +57,10 @@ export function renderGuide(title: string, data: GuideData, author: string, date
 
   const badges = (data.badges ?? []).map(b => {
     const labelLen = (b.label || '').length;
-    const sizeClass = labelLen > 25 ? 'text-[8px]' : labelLen > 18 ? 'text-[9px]' : 'text-[10px]';
+    const isOneWord = !b.label.includes(' ') && !b.label.includes(':');
+    const badgeScale = isOneWord && labelLen > 10 ? `style="font-size: ${Math.max(6, 10 - (labelLen - 10) * 0.4)}px"` : '';
     return `
-    <span class="px-3 py-1.5 rounded-full border ${sizeClass} font-rpg font-bold tracking-widest uppercase ${badgeColorMap[b.color] || badgeColorMap.yellow} break-all max-w-[150px]">
+    <span class="px-2 py-1 rounded-full border text-[10px] font-rpg font-bold tracking-widest uppercase ${badgeColorMap[b.color] || badgeColorMap.yellow}" ${badgeScale}>
       ${esc(b.label)}
     </span>`;
   }).join("");
@@ -70,27 +71,29 @@ export function renderGuide(title: string, data: GuideData, author: string, date
         const icon = s.emoji || statIconMap[s.label.toUpperCase()] || "📊";
         const labelLen = (s.label || '').length;
         const valueLen = (s.value || '').length;
-        const labelSize = labelLen > 20 ? 'text-[8px]' : labelLen > 15 ? 'text-[9px]' : 'text-[9px]';
-        const valueSize = valueLen > 20 ? 'text-lg' : valueLen > 15 ? 'text-xl' : 'text-xl';
+        const isOneWord = !s.label.includes(' ') && !s.label.includes(':');
+        const isValueOneWord = !s.value.includes(' ') && !s.value.includes(':');
+        const labelScale = isOneWord && labelLen > 8 ? `style="font-size: ${Math.max(7, 12 - labelLen * 0.5)}px"` : '';
+        const valueScale = isValueOneWord && valueLen > 5 ? `style="font-size: ${Math.max(10, 20 - valueLen * 0.8)}px"` : '';
         return `
-        <div class="bg-black/40 border border-white/5 rounded-[2rem] p-6 text-center hover:border-violet-500/30 transition-all duration-300 group hover:bg-white/5 shadow-inner min-w-0">
+        <div class="bg-black/40 border border-white/5 rounded-[2rem] p-4 md:p-6 text-center hover:border-violet-500/30 transition-all duration-300 group hover:bg-white/5 shadow-inner min-w-0">
           <div class="text-2xl mb-3 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]">${icon}</div>
-          <div class="${labelSize} text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1 break-all">${esc(s.label)}</div>
-          <div class="${valueSize} font-rpg font-bold text-white tracking-widest uppercase break-all">${esc(s.value)}</div>
+          <div class="text-[9px] text-stone-600 font-rpg font-bold uppercase tracking-[0.3em] mb-1 break-words" ${labelScale}>${esc(s.label)}</div>
+          <div class="text-xl font-rpg font-bold text-white tracking-widest uppercase break-words" ${valueScale}>${esc(s.value)}</div>
         </div>`;
       }).join("")}
     </div>` : "";
 
   const steps = (data.steps ?? []).map((s, i) => {
     const textLen = (s.text || '').length;
-    const sizeClass = textLen > 120 ? 'text-sm' : 'text-base';
+    const stepSize = textLen > 180 ? 'text-xs' : textLen > 120 ? 'text-sm' : textLen > 80 ? 'text-base' : 'text-base';
     return `
     <div class="flex gap-6 items-start group">
       <div class="w-10 h-10 rounded-xl bg-violet-600/10 border border-violet-500/30 flex items-center justify-center flex-shrink-0 text-violet-400 font-rpg font-bold text-sm shadow-[0_0_15px_rgba(139,92,246,0.1)] group-hover:bg-violet-600 group-hover:text-white transition-all">
         ${i + 1}
       </div>
       <div class="flex-1 pt-2 min-w-0">
-        <p class="text-stone-300 leading-relaxed font-subtitle ${sizeClass} break-all">${esc(s.text)}</p>
+        <p class="text-stone-300 leading-relaxed font-subtitle ${stepSize}">${esc(s.text)}</p>
       </div>
     </div>`;
   }).join("");
